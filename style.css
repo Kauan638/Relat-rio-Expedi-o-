@@ -1,0 +1,875 @@
+/* =========================================================
+   PENDÊNCIA PTL — PAINEL INDUSTRIAL
+   Mesmo sistema de tokens/estrutura do Gerador de Abastecimento PCP:
+   grafite + âmbar (ação) / verde (ok) / vermelho (crítico) / azul (neutro)
+   Tipografia: Oswald (display) + Inter (corpo) + JetBrains Mono (dados)
+========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+    --bg:            #14181C;
+    --surface:       #1D2329;
+    --surface-alt:   #232A31;
+    --border:        #2A323B;
+    --border-light:  #38424D;
+
+    --text:          #E7ECF1;
+    --text-muted:    #8B97A3;
+
+    --amber:         #F2A93B;
+    --amber-dim:     #6B5525;
+    --green:         #3DCB82;
+    --green-dim:     #1F4B36;
+    --red:           #E8564F;
+    --red-dim:       #4E2523;
+    --blue:          #4C8FD1;
+    --blue-dim:      #223A52;
+
+    --radius:        6px;
+    --radius-sm:     4px;
+
+    --font-display:  'Oswald', 'Segoe UI', sans-serif;
+    --font-body:     'Inter', 'Segoe UI', sans-serif;
+    --font-mono:     'JetBrains Mono', 'Consolas', monospace;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:var(--font-body);
+}
+
+body{
+    background:
+        radial-gradient(ellipse at top, #1A2027 0%, var(--bg) 55%);
+    background-attachment:fixed;
+    padding:25px;
+    color:var(--text);
+}
+
+.container{
+    max-width:1700px;
+    margin:auto;
+}
+
+/* =========================
+TÍTULO + FAIXA DE SINALIZAÇÃO
+(assinatura visual: fita zebrada de doca)
+========================= */
+
+.container h1{
+    text-align:center;
+    margin-bottom:0;
+    color:var(--text);
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:2rem;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    padding-bottom:18px;
+}
+
+.container h1::after{
+    content:"";
+    display:block;
+    width:220px;
+    height:6px;
+    margin:16px auto 0;
+    border-radius:2px;
+    background:repeating-linear-gradient(
+        135deg,
+        var(--red) 0px,
+        var(--red) 10px,
+        var(--bg) 10px,
+        var(--bg) 20px
+    );
+    opacity:.85;
+}
+
+.subtitulo{
+    text-align:center;
+    color:var(--text-muted);
+    font-size:.9rem;
+    margin-bottom:25px;
+}
+
+/* =========================
+CABEÇALHO EXCLUSIVO DE IMPRESSÃO
+(fica oculto na tela; só aparece em @media print,
+no topo do relatório impresso pelo botão "Imprimir")
+========================= */
+
+.cabecalho-impressao{
+    display:none;
+}
+
+/* =========================
+CARDS
+========================= */
+
+.card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:25px;
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.35);
+    margin-bottom:25px;
+}
+
+.card h2{
+    margin-bottom:20px;
+    color:var(--text);
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:1.15rem;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    border-left:3px solid var(--amber);
+    padding-left:12px;
+}
+
+/* =========================
+UPLOADS
+========================= */
+
+.upload-area{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(auto-fit,minmax(350px,1fr));
+
+    gap:20px;
+}
+
+.upload-box{
+
+    border:1px dashed var(--border-light);
+
+    border-radius:var(--radius);
+
+    padding:25px;
+
+    background:var(--surface-alt);
+
+    text-align:center;
+
+    transition:.25s;
+}
+
+.upload-box:hover{
+
+    border-color:var(--amber);
+
+    transform:translateY(-2px);
+
+    box-shadow:
+        0 6px 20px rgba(242,169,59,.12);
+}
+
+.upload-box label{
+
+    display:block;
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    margin-bottom:15px;
+
+    color:var(--text-muted);
+
+    letter-spacing:.08em;
+
+    text-transform:uppercase;
+}
+
+.upload-box input{
+
+    display:none;
+}
+
+.upload-btn{
+
+    display:inline-block;
+
+    background:var(--surface);
+
+    border:1px solid var(--blue);
+
+    color:var(--blue);
+
+    padding:12px 22px;
+
+    border-radius:var(--radius-sm);
+
+    cursor:pointer;
+
+    font-weight:600;
+
+    font-size:.9rem;
+
+    letter-spacing:.04em;
+
+    transition:.25s;
+}
+
+.upload-btn:hover{
+
+    background:var(--blue);
+
+    color:#fff;
+}
+
+.upload-nome{
+
+    margin-top:15px;
+
+    color:var(--text-muted);
+
+    font-family:var(--font-mono);
+
+    font-size:.82rem;
+}
+
+/* =========================
+AÇÕES / BOTÕES
+========================= */
+
+.acoes{
+
+    display:flex;
+
+    gap:12px;
+
+    flex-wrap:wrap;
+}
+
+button{
+
+    border:none;
+
+    padding:13px 24px;
+
+    border-radius:var(--radius-sm);
+
+    cursor:pointer;
+
+    font-size:.85rem;
+
+    font-weight:700;
+
+    letter-spacing:.05em;
+
+    text-transform:uppercase;
+
+    transition:.2s;
+
+    font-family:var(--font-body);
+}
+
+button:hover{
+
+    transform:translateY(-2px);
+    filter:brightness(1.08);
+}
+
+button:focus-visible{
+
+    outline:2px solid var(--amber);
+    outline-offset:2px;
+}
+
+.btn-processar{
+
+    background:var(--green);
+
+    color:#0B1F16;
+}
+
+.btn-processar:hover{
+
+    background:#33B672;
+}
+
+.btn-exportar{
+
+    background:var(--amber);
+
+    color:#241A05;
+}
+
+.btn-exportar:hover{
+
+    background:#E4991F;
+}
+
+/* =========================
+KPIS — INDICADORES DE PAINEL
+Cor da borda lateral = significado real do dado
+========================= */
+
+.kpis{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(auto-fit,minmax(220px,1fr));
+
+    gap:20px;
+
+    margin-bottom:25px;
+}
+
+.kpi-card{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+    border-left:4px solid var(--blue);
+
+    border-radius:var(--radius);
+
+    padding:22px 25px;
+
+    text-align:left;
+
+    box-shadow:
+        0 8px 24px rgba(0,0,0,.3);
+}
+
+.kpi-card h3{
+
+    color:var(--text-muted);
+
+    margin-bottom:10px;
+
+    font-size:.75rem;
+
+    font-weight:600;
+
+    letter-spacing:.1em;
+
+    text-transform:uppercase;
+}
+
+.kpi-card span{
+
+    font-family:var(--font-mono);
+
+    font-size:2.2rem;
+
+    font-weight:700;
+
+    color:var(--text);
+}
+
+/* mapeamento semântico: 1 Lojas (neutro) / 2 PTLs (ação)
+   3 SKUs (ok) / 4 Volumes (crítico/atenção) */
+
+.kpi-card:nth-child(1){ border-left-color:var(--blue); }
+.kpi-card:nth-child(1) span{ color:var(--blue); }
+
+.kpi-card:nth-child(2){ border-left-color:var(--amber); }
+.kpi-card:nth-child(2) span{ color:var(--amber); }
+
+.kpi-card:nth-child(3){ border-left-color:var(--green); }
+.kpi-card:nth-child(3) span{ color:var(--green); }
+
+.kpi-card:nth-child(4){ border-left-color:var(--red); }
+.kpi-card:nth-child(4) span{ color:var(--red); }
+
+/* =========================
+FILTROS
+========================= */
+
+.filtros{
+
+    display:flex;
+
+    gap:15px;
+
+    flex-wrap:wrap;
+}
+
+.filtros input{
+
+    flex:1;
+
+    min-width:220px;
+
+    padding:12px 14px;
+
+    background:var(--surface-alt);
+
+    border:1px solid var(--border-light);
+
+    border-radius:var(--radius-sm);
+
+    color:var(--text);
+
+    font-size:14px;
+
+    font-family:var(--font-body);
+}
+
+.filtros input::placeholder{
+
+    color:var(--text-muted);
+}
+
+.filtros input:focus{
+
+    outline:none;
+
+    border-color:var(--amber);
+}
+
+/* =========================
+RESULTADO — LOJAS / PTLS
+(equivalente ao .card + .tabela-container do
+Gerador de Abastecimento, mas com dois níveis de
+agrupamento: loja > ptl)
+========================= */
+
+#resultado{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:20px;
+}
+
+.loja-card{
+
+    background:var(--surface-alt);
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius);
+
+    padding:22px;
+}
+
+.loja-titulo{
+
+    font-family:var(--font-display);
+
+    font-weight:600;
+
+    font-size:1.3rem;
+
+    letter-spacing:.05em;
+
+    text-transform:uppercase;
+
+    color:var(--blue);
+
+    margin-bottom:16px;
+
+    border-left:3px solid var(--blue);
+
+    padding-left:12px;
+}
+
+.ptl-card{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+    border-left:4px solid var(--amber);
+
+    border-radius:var(--radius);
+
+    padding:18px;
+
+    margin-bottom:15px;
+}
+
+.ptl-titulo{
+
+    font-family:var(--font-display);
+
+    font-weight:600;
+
+    font-size:1.05rem;
+
+    color:var(--red);
+
+    margin-bottom:12px;
+}
+
+.tabela-container{
+
+    overflow:auto;
+
+    margin-top:10px;
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius);
+}
+
+.tabela{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    min-width:600px;
+}
+
+.tabela thead{
+
+    background:var(--surface-alt);
+
+    color:var(--text-muted);
+}
+
+.tabela th{
+
+    font-family:var(--font-body);
+
+    font-size:.72rem;
+
+    font-weight:700;
+
+    letter-spacing:.08em;
+
+    text-transform:uppercase;
+}
+
+.tabela th,
+.tabela td{
+
+    padding:12px;
+
+    border:1px solid var(--border);
+
+    text-align:center;
+}
+
+.tabela td{
+
+    font-family:var(--font-mono);
+
+    font-size:.85rem;
+
+    color:var(--text);
+}
+
+.tabela tbody tr:nth-child(even){
+
+    background:rgba(255,255,255,.02);
+}
+
+.tabela tbody tr:hover{
+
+    background:rgba(76,143,209,.1);
+}
+
+.resumo-ptl{
+
+    margin-top:12px;
+
+    font-family:var(--font-mono);
+
+    font-weight:700;
+
+    font-size:.85rem;
+
+    color:var(--green);
+}
+
+/* =========================
+TEXTO WHATSAPP
+========================= */
+
+.whatsapp textarea{
+
+    width:100%;
+
+    height:320px;
+
+    resize:vertical;
+
+    padding:16px;
+
+    background:var(--surface-alt);
+
+    border:1px solid var(--border-light);
+
+    border-radius:var(--radius-sm);
+
+    color:var(--text);
+
+    font-family:var(--font-mono);
+
+    font-size:.82rem;
+}
+
+.whatsapp textarea:focus{
+
+    outline:none;
+
+    border-color:var(--amber);
+}
+
+/* =========================
+LOADING
+========================= */
+
+.loading{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(20,24,28,.92);
+
+    display:none;
+
+    justify-content:center;
+
+    align-items:center;
+
+    flex-direction:column;
+
+    z-index:9999;
+}
+
+.spinner{
+
+    width:70px;
+    height:70px;
+
+    border:6px solid var(--border-light);
+
+    border-top:6px solid var(--amber);
+
+    border-radius:50%;
+
+    animation:girar 1s linear infinite;
+}
+
+.loading p{
+
+    margin-top:20px;
+
+    font-size:16px;
+
+    font-weight:600;
+
+    letter-spacing:.06em;
+
+    text-transform:uppercase;
+
+    color:var(--text-muted);
+
+    font-family:var(--font-display);
+}
+
+@keyframes girar{
+
+    100%{
+
+        transform:rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion:reduce){
+
+    .spinner{ animation-duration:2.4s; }
+
+    button:hover,
+    .upload-box:hover{ transform:none; }
+
+}
+
+/* =========================
+RESPONSIVO
+========================= */
+
+@media(max-width:768px){
+
+    .filtros{
+
+        flex-direction:column;
+    }
+
+}
+
+/* =========================
+IMPRESSÃO
+========================= */
+
+@media print{
+
+    @page{
+        size:A4 portrait;
+        margin:14mm;
+    }
+
+    body{
+        background:#ffffff !important;
+        color:#1A1D21;
+        padding:0;
+    }
+
+    .container h1,
+    .container h1::after,
+    .subtitulo,
+    .card:has(.upload-area),
+    .card:has(.filtros),
+    .card .acoes,
+    .card h2,
+    .whatsapp,
+    .loading{
+        display:none !important;
+    }
+
+    /* Card que sobra (o de Resultado) perde o chrome
+       escuro e vira um wrapper neutro no papel */
+    .card{
+        background:none !important;
+        border:none;
+        box-shadow:none;
+        padding:0;
+        margin-bottom:0;
+    }
+
+    /* Cabeçalho de impressão vira visível e assume
+       o papel do h1/subtítulo que ficam escondidos */
+    .cabecalho-impressao{
+        display:flex !important;
+        justify-content:space-between;
+        align-items:flex-end;
+        border-bottom:3px solid #F2A93B;
+        padding-bottom:10px;
+        margin-bottom:18px;
+    }
+
+    .cabecalho-impressao h1{
+        font-family:var(--font-display);
+        font-size:20px;
+        font-weight:700;
+        letter-spacing:.03em;
+        text-transform:uppercase;
+        color:#1A1D21;
+    }
+
+    .meta-impressao{
+        font-size:11px;
+        color:#5B6570;
+    }
+
+    /* KPIs viram uma faixa de números discreta,
+       sem cards com sombra/gradiente */
+    .kpis{
+        display:flex;
+        gap:20px;
+        margin-bottom:18px;
+        page-break-inside:avoid;
+    }
+
+    .kpi-card{
+        background:none !important;
+        border:none;
+        border-left:3px solid #ccc;
+        box-shadow:none;
+        padding:4px 12px;
+        flex:none;
+    }
+
+    .kpi-card:nth-child(1){ border-left-color:#4C8FD1; }
+    .kpi-card:nth-child(2){ border-left-color:#F2A93B; }
+    .kpi-card:nth-child(3){ border-left-color:#3DCB82; }
+    .kpi-card:nth-child(4){ border-left-color:#E8564F; }
+
+    .kpi-card span{
+        font-size:16px;
+        color:#1A1D21 !important;
+    }
+
+    #resultado{
+        gap:14px;
+    }
+
+    .loja-card{
+        background:#ffffff;
+        border:1px solid #ccc;
+        border-radius:0;
+        padding:0;
+        page-break-inside:avoid;
+        margin-bottom:14px;
+    }
+
+    .loja-titulo{
+        background:#1D2329;
+        color:#ffffff !important;
+        border-left:none;
+        padding:8px 14px;
+        font-size:14px;
+        margin-bottom:0;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+    .ptl-card{
+        background:#ffffff;
+        border:none;
+        border-top:1px solid #E2E5E9;
+        border-left:none;
+        border-radius:0;
+        padding:10px 14px;
+        margin-bottom:0;
+        page-break-inside:avoid;
+    }
+
+    .ptl-titulo{
+        color:#1A1D21 !important;
+        font-size:12.5px;
+        margin-bottom:6px;
+    }
+
+    .tabela{
+        font-size:10.5px;
+        min-width:0;
+    }
+
+    .tabela thead{
+        display:table-header-group;
+        background:#F3F4F6 !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+    .tabela th{
+        color:#5B6570;
+        border-color:#E2E5E9;
+    }
+
+    .tabela td{
+        color:#1A1D21;
+        border-color:#E2E5E9;
+    }
+
+    .tabela tbody tr{
+        page-break-inside:avoid;
+    }
+
+    .tabela tbody tr:nth-child(even){
+        background:#FAFBFC !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+    .resumo-ptl{
+        color:#1A1D21 !important;
+        font-size:11px;
+    }
+}
