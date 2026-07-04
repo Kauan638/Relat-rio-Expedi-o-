@@ -9,7 +9,7 @@
           content="width=device-width, initial-scale=1.0">
 
     <title>
-        Pendência PTL
+        Relatório de Expedição
     </title>
 
     <link rel="stylesheet" href="style.css">
@@ -17,8 +17,8 @@
     <!-- XLSX -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- html2canvas -->
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 </head>
 
@@ -27,11 +27,11 @@
     <div class="container">
 
         <h1>
-            🚨 Pendência PTL
+            🚛 Relatório de Expedição
         </h1>
 
         <p class="subtitulo">
-            Relatório de pendências por loja e PTL
+            Dashboard e relatório executivo de expedição — Turno B
         </p>
 
         <!-- ===================================== -->
@@ -46,17 +46,17 @@
 
             <div class="upload-area">
 
-                <!-- VELOX -->
+                <!-- BASE -->
 
                 <div class="upload-box">
 
                     <label>
-                        📊 Arquivo Velox
+                        📊 Base (Turno B)
                     </label>
 
                     <label
                         class="upload-btn"
-                        for="arquivo">
+                        for="arquivoBase">
 
                         Selecionar Arquivo
 
@@ -64,43 +64,12 @@
 
                     <input
                         type="file"
-                        id="arquivo"
-                        accept=".csv,.xlsx,.xls">
+                        id="arquivoBase"
+                        accept=".xlsx,.xls">
 
                     <div
                         class="upload-nome"
-                        id="nomeArquivo">
-
-                        Nenhum arquivo selecionado
-
-                    </div>
-
-                </div>
-
-                <!-- POSIÇÃO DE ENDEREÇOS -->
-
-                <div class="upload-box">
-
-                    <label>
-                        📦 Posição de Endereços
-                    </label>
-
-                    <label
-                        class="upload-btn"
-                        for="arquivoEnderecos">
-
-                        Selecionar Arquivo
-
-                    </label>
-
-                    <input
-                        type="file"
-                        id="arquivoEnderecos"
-                        accept=".txt">
-
-                    <div
-                        class="upload-nome"
-                        id="nomeEnderecos">
+                        id="nomeBase">
 
                         Nenhum arquivo selecionado
 
@@ -116,9 +85,25 @@
 
                 <button
                     class="btn-processar"
-                    onclick="processarArquivo()">
+                    onclick="processar()">
 
-                    🚀 Processar Arquivo
+                    🚀 Processar Dados
+
+                </button>
+
+                <button
+                    class="btn-exportar"
+                    onclick="exportarExcel()">
+
+                    📥 Exportar Excel
+
+                </button>
+
+                <button
+                    class="btn-exportar"
+                    onclick="imprimirRelatorioExecutivo()">
+
+                    🖨️ Relatório Executivo
 
                 </button>
 
@@ -135,194 +120,182 @@
             <div class="kpi-card">
 
                 <h3>
-                    Lojas
+                    Caminhões Carregados
+                </h3>
+
+                <span id="kpiCaminhoes">
+                    0
+                </span>
+
+                <div class="kpi-sub" id="kpiCaminhoesMedia">
+                    Média/dia: 0
+                </div>
+
+            </div>
+
+            <div class="kpi-card">
+
+                <h3>
+                    Docas Produzidas
+                </h3>
+
+                <span id="kpiDocas">
+                    0
+                </span>
+
+                <div class="kpi-sub" id="kpiDocasMedia">
+                    Média/dia: 0
+                </div>
+
+            </div>
+
+            <div class="kpi-card">
+
+                <h3>
+                    Lojas Faturadas
                 </h3>
 
                 <span id="kpiLojas">
                     0
                 </span>
 
-            </div>
-
-            <div class="kpi-card">
-
-                <h3>
-                    PTLs
-                </h3>
-
-                <span id="kpiPtls">
-                    0
-                </span>
+                <div class="kpi-sub" id="kpiLojasMedia">
+                    Média/dia: 0
+                </div>
 
             </div>
 
             <div class="kpi-card">
 
                 <h3>
-                    SKUs
+                    Veículos Turno A
                 </h3>
 
-                <span id="kpiSkus">
+                <span id="kpiVeiculosA">
                     0
                 </span>
+
+                <div class="kpi-sub">
+                    Completados fora do turno
+                </div>
 
             </div>
 
             <div class="kpi-card">
 
                 <h3>
-                    Volumes
+                    Cargas Fora da Escala
                 </h3>
 
-                <span id="kpiVolumes">
+                <span id="kpiForaEscala">
                     0
                 </span>
+
+                <div class="kpi-sub">
+                    Atenção: fora do planejado
+                </div>
 
             </div>
 
         </div>
 
         <!-- ===================================== -->
-        <!-- FILTROS -->
+        <!-- GRÁFICO -->
         <!-- ===================================== -->
 
         <div class="card">
 
             <h2>
-                Filtros
+                Evolução Diária
             </h2>
 
-            <div class="filtros">
+            <div class="grafico-container">
 
-                <input
-                    type="text"
-                    id="filtroLoja"
-                    placeholder="Filtrar Loja"
-                    onkeyup="renderizar()">
-
-                <input
-                    type="text"
-                    id="filtroPTL"
-                    placeholder="Filtrar PTL"
-                    onkeyup="renderizar()">
-
-                <input
-                    type="text"
-                    id="filtroSKU"
-                    placeholder="Filtrar SKU"
-                    onkeyup="renderizar()">
-
-                <input
-                    type="date"
-                    id="filtroData"
-                    onchange="aplicarFiltros()">
+                <canvas id="graficoDiario"></canvas>
 
             </div>
 
         </div>
 
         <!-- ===================================== -->
-        <!-- RESULTADO -->
+        <!-- TABELA -->
         <!-- ===================================== -->
 
         <div class="card">
 
             <h2>
-                Resultado
+                Detalhamento por Dia
             </h2>
 
-            <div class="acoes">
+            <div class="tabela-container">
 
-                <button
-                    class="btn-exportar"
-                    onclick="copiarWhatsappResumo()">
+                <table>
 
-                    📱 WhatsApp Resumo
+                    <thead>
 
-                </button>
+                        <tr>
 
-                <button
-                    class="btn-exportar"
-                    onclick="baixarImagemResumo()">
+                            <th>Data</th>
 
-                    🖼️ Baixar Imagem
+                            <th>Caminhões Carregados</th>
 
-                </button>
+                            <th>Docas Produzidas</th>
 
-                <button
-                    class="btn-exportar"
-                    onclick="baixarImagemTop10()">
+                            <th>Lojas Faturadas</th>
 
-                    🏆 Baixar Imagem Maiores Pendências
+                            <th>Veículos Turno A</th>
 
-                </button>
+                            <th>Cargas Fora da Escala</th>
 
-                <button
-                    class="btn-exportar"
-                    onclick="copiarWhatsappCompleto()">
+                        </tr>
 
-                    📄 Relatório Completo
+                    </thead>
 
-                </button>
+                    <tbody id="tbodyBase">
 
-                <button
-                    class="btn-exportar"
-                    onclick="exportarExcel()">
+                    </tbody>
 
-                    📊 Exportar Excel
+                    <tfoot id="tfootBase">
 
-                </button>
+                    </tfoot>
 
-                <button
-                    class="btn-exportar"
-                    onclick="imprimirResultado()">
-
-                    🖨️ Imprimir
-
-                </button>
-
-                <button
-                    class="btn-exportar"
-                    onclick="imprimirPorVolume()">
-
-                    📦 Imprimir por Volume
-
-                </button>
+                </table>
 
             </div>
 
-            <div id="resultado"></div>
-
         </div>
 
         <!-- ===================================== -->
-        <!-- TEXTO WHATSAPP -->
+        <!-- FATURAMENTO (aguardando dados) -->
         <!-- ===================================== -->
 
-        <div class="card whatsapp">
+        <div class="card">
 
             <h2>
-                Texto WhatsApp
+                Faturamento
             </h2>
 
-            <textarea
-                id="textoWhatsapp"
-                readonly>
-            </textarea>
+            <div class="placeholder">
+                Aguardando dados de Faturamento para montar este painel.
+            </div>
 
         </div>
 
-    </div>
+        <!-- ===================================== -->
+        <!-- FREQUÊNCIA (aguardando dados) -->
+        <!-- ===================================== -->
 
-    <!-- ===================================== -->
-    <!-- CABEÇALHO EXCLUSIVO DE IMPRESSÃO -->
-    <!-- ===================================== -->
+        <div class="card">
 
-    <div id="cabecalhoImpressao" class="cabecalho-impressao">
+            <h2>
+                Frequência
+            </h2>
 
-        <h1>🚨 Pendência PTL</h1>
+            <div class="placeholder">
+                Aguardando dados de Frequência para montar este painel.
+            </div>
 
-        <div class="meta-impressao" id="metaImpressao"></div>
+        </div>
 
     </div>
 

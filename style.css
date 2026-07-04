@@ -1,8 +1,8 @@
 /* =========================================================
-   PENDÊNCIA PTL — PAINEL INDUSTRIAL
-   Mesmo sistema de tokens/estrutura do Gerador de Abastecimento PCP:
-   grafite + âmbar (ação) / verde (ok) / vermelho (crítico) / azul (neutro)
+   RELATÓRIO DE EXPEDIÇÃO — PAINEL INDUSTRIAL
+   Tokens: grafite + âmbar (ação) / verde (ok) / vermelho (crítico) / azul (neutro)
    Tipografia: Oswald (display) + Inter (corpo) + JetBrains Mono (dados)
+   Mesmo sistema visual do Gerador de Abastecimento PCP / Pendência PTL.
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
@@ -56,10 +56,9 @@ body{
 
 /* =========================
 TÍTULO + FAIXA DE SINALIZAÇÃO
-(assinatura visual: fita zebrada de doca)
 ========================= */
 
-.container h1{
+h1{
     text-align:center;
     margin-bottom:0;
     color:var(--text);
@@ -71,17 +70,17 @@ TÍTULO + FAIXA DE SINALIZAÇÃO
     padding-bottom:18px;
 }
 
-.container h1::after{
+h1::after{
     content:"";
     display:block;
     width:220px;
     height:6px;
-    margin:16px auto 0;
+    margin:16px auto 25px;
     border-radius:2px;
     background:repeating-linear-gradient(
         135deg,
-        var(--red) 0px,
-        var(--red) 10px,
+        var(--amber) 0px,
+        var(--amber) 10px,
         var(--bg) 10px,
         var(--bg) 20px
     );
@@ -92,17 +91,8 @@ TÍTULO + FAIXA DE SINALIZAÇÃO
     text-align:center;
     color:var(--text-muted);
     font-size:.9rem;
+    margin-top:-15px;
     margin-bottom:25px;
-}
-
-/* =========================
-CABEÇALHO EXCLUSIVO DE IMPRESSÃO
-(fica oculto na tela; só aparece em @media print,
-no topo do relatório impresso pelo botão "Imprimir")
-========================= */
-
-.cabecalho-impressao{
-    display:none;
 }
 
 /* =========================
@@ -317,7 +307,7 @@ Cor da borda lateral = significado real do dado
     display:grid;
 
     grid-template-columns:
-        repeat(auto-fit,minmax(220px,1fr));
+        repeat(auto-fit,minmax(200px,1fr));
 
     gap:20px;
 
@@ -347,28 +337,43 @@ Cor da borda lateral = significado real do dado
 
     margin-bottom:10px;
 
-    font-size:.75rem;
+    font-size:.72rem;
 
     font-weight:600;
 
-    letter-spacing:.1em;
+    letter-spacing:.08em;
 
     text-transform:uppercase;
 }
 
 .kpi-card span{
 
+    display:block;
+
     font-family:var(--font-mono);
 
-    font-size:2.2rem;
+    font-size:2rem;
 
     font-weight:700;
 
     color:var(--text);
 }
 
-/* mapeamento semântico: 1 Lojas (neutro) / 2 PTLs (ação)
-   3 SKUs (ok) / 4 Volumes (crítico/atenção) */
+.kpi-card .kpi-sub{
+
+    margin-top:6px;
+
+    font-size:.72rem;
+
+    color:var(--text-muted);
+
+    font-family:var(--font-body);
+}
+
+/* mapeamento semântico das 5 métricas da Base:
+   1 Caminhões (neutro) / 2 Docas (ação) /
+   3 Lojas Faturadas (ok) / 4 Veículos Turno A (informativo) /
+   5 Cargas Fora da Escala (crítico) */
 
 .kpi-card:nth-child(1){ border-left-color:var(--blue); }
 .kpi-card:nth-child(1) span{ color:var(--blue); }
@@ -379,158 +384,57 @@ Cor da borda lateral = significado real do dado
 .kpi-card:nth-child(3){ border-left-color:var(--green); }
 .kpi-card:nth-child(3) span{ color:var(--green); }
 
-.kpi-card:nth-child(4){ border-left-color:var(--red); }
-.kpi-card:nth-child(4) span{ color:var(--red); }
+.kpi-card:nth-child(4){ border-left-color:var(--border-light); }
+.kpi-card:nth-child(4) span{ color:var(--text-muted); }
+
+.kpi-card:nth-child(5){ border-left-color:var(--red); }
+.kpi-card:nth-child(5) span{ color:var(--red); }
 
 /* =========================
-FILTROS
+GRÁFICO
 ========================= */
 
-.filtros{
+.grafico-container{
 
-    display:flex;
+    position:relative;
 
-    gap:15px;
+    width:100%;
 
-    flex-wrap:wrap;
-}
-
-.filtros input{
-
-    flex:1;
-
-    min-width:220px;
-
-    padding:12px 14px;
-
-    background:var(--surface-alt);
-
-    border:1px solid var(--border-light);
-
-    border-radius:var(--radius-sm);
-
-    color:var(--text);
-
-    font-size:14px;
-
-    font-family:var(--font-body);
-}
-
-.filtros input::placeholder{
-
-    color:var(--text-muted);
-}
-
-.filtros input:focus{
-
-    outline:none;
-
-    border-color:var(--amber);
+    height:360px;
 }
 
 /* =========================
-RESULTADO — LOJAS / PTLS
-(equivalente ao .card + .tabela-container do
-Gerador de Abastecimento, mas com dois níveis de
-agrupamento: loja > ptl)
+TABELA
 ========================= */
-
-#resultado{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:20px;
-}
-
-.loja-card{
-
-    background:var(--surface-alt);
-
-    border:1px solid var(--border);
-
-    border-radius:var(--radius);
-
-    padding:22px;
-}
-
-.loja-titulo{
-
-    font-family:var(--font-display);
-
-    font-weight:600;
-
-    font-size:1.3rem;
-
-    letter-spacing:.05em;
-
-    text-transform:uppercase;
-
-    color:var(--blue);
-
-    margin-bottom:16px;
-
-    border-left:3px solid var(--blue);
-
-    padding-left:12px;
-}
-
-.ptl-card{
-
-    background:var(--surface);
-
-    border:1px solid var(--border);
-    border-left:4px solid var(--amber);
-
-    border-radius:var(--radius);
-
-    padding:18px;
-
-    margin-bottom:15px;
-}
-
-.ptl-titulo{
-
-    font-family:var(--font-display);
-
-    font-weight:600;
-
-    font-size:1.05rem;
-
-    color:var(--red);
-
-    margin-bottom:12px;
-}
 
 .tabela-container{
 
     overflow:auto;
 
-    margin-top:10px;
+    margin-top:20px;
 
     border:1px solid var(--border);
 
     border-radius:var(--radius);
 }
 
-.tabela{
+table{
 
     width:100%;
 
     border-collapse:collapse;
 
-    min-width:600px;
+    min-width:800px;
 }
 
-.tabela thead{
+thead{
 
     background:var(--surface-alt);
 
     color:var(--text-muted);
 }
 
-.tabela th{
+th{
 
     font-family:var(--font-body);
 
@@ -543,8 +447,7 @@ agrupamento: loja > ptl)
     text-transform:uppercase;
 }
 
-.tabela th,
-.tabela td{
+th,td{
 
     padding:12px;
 
@@ -553,7 +456,7 @@ agrupamento: loja > ptl)
     text-align:center;
 }
 
-.tabela td{
+td{
 
     font-family:var(--font-mono);
 
@@ -562,61 +465,44 @@ agrupamento: loja > ptl)
     color:var(--text);
 }
 
-.tabela tbody tr:nth-child(even){
+tbody tr:nth-child(even){
 
     background:rgba(255,255,255,.02);
 }
 
-.tabela tbody tr:hover{
+tbody tr:hover{
 
     background:rgba(76,143,209,.1);
 }
 
-.resumo-ptl{
-
-    margin-top:12px;
-
-    font-family:var(--font-mono);
+/* linha de totais no rodapé da tabela */
+tfoot td{
 
     font-weight:700;
 
-    font-size:.85rem;
+    background:var(--surface-alt);
 
-    color:var(--green);
+    color:var(--amber);
 }
 
 /* =========================
-TEXTO WHATSAPP
+PLACEHOLDER (seções ainda sem dados,
+ex: Faturamento / Frequência, aguardando upload) 
 ========================= */
 
-.whatsapp textarea{
+.placeholder{
 
-    width:100%;
+    text-align:center;
 
-    height:320px;
+    padding:40px 20px;
 
-    resize:vertical;
+    color:var(--text-muted);
 
-    padding:16px;
+    font-size:.9rem;
 
-    background:var(--surface-alt);
+    border:1px dashed var(--border-light);
 
-    border:1px solid var(--border-light);
-
-    border-radius:var(--radius-sm);
-
-    color:var(--text);
-
-    font-family:var(--font-mono);
-
-    font-size:.82rem;
-}
-
-.whatsapp textarea:focus{
-
-    outline:none;
-
-    border-color:var(--amber);
+    border-radius:var(--radius);
 }
 
 /* =========================
@@ -696,180 +582,9 @@ RESPONSIVO
 
 @media(max-width:768px){
 
-    .filtros{
+    .acoes{
 
         flex-direction:column;
     }
 
-}
-
-/* =========================
-IMPRESSÃO
-========================= */
-
-@media print{
-
-    @page{
-        size:A4 portrait;
-        margin:14mm;
-    }
-
-    body{
-        background:#ffffff !important;
-        color:#1A1D21;
-        padding:0;
-    }
-
-    .container h1,
-    .container h1::after,
-    .subtitulo,
-    .card:has(.upload-area),
-    .card:has(.filtros),
-    .card .acoes,
-    .card h2,
-    .whatsapp,
-    .loading{
-        display:none !important;
-    }
-
-    /* Card que sobra (o de Resultado) perde o chrome
-       escuro e vira um wrapper neutro no papel */
-    .card{
-        background:none !important;
-        border:none;
-        box-shadow:none;
-        padding:0;
-        margin-bottom:0;
-    }
-
-    /* Cabeçalho de impressão vira visível e assume
-       o papel do h1/subtítulo que ficam escondidos */
-    .cabecalho-impressao{
-        display:flex !important;
-        justify-content:space-between;
-        align-items:flex-end;
-        border-bottom:3px solid #F2A93B;
-        padding-bottom:10px;
-        margin-bottom:18px;
-    }
-
-    .cabecalho-impressao h1{
-        font-family:var(--font-display);
-        font-size:20px;
-        font-weight:700;
-        letter-spacing:.03em;
-        text-transform:uppercase;
-        color:#1A1D21;
-    }
-
-    .meta-impressao{
-        font-size:11px;
-        color:#5B6570;
-    }
-
-    /* KPIs viram uma faixa de números discreta,
-       sem cards com sombra/gradiente */
-    .kpis{
-        display:flex;
-        gap:20px;
-        margin-bottom:18px;
-        page-break-inside:avoid;
-    }
-
-    .kpi-card{
-        background:none !important;
-        border:none;
-        border-left:3px solid #ccc;
-        box-shadow:none;
-        padding:4px 12px;
-        flex:none;
-    }
-
-    .kpi-card:nth-child(1){ border-left-color:#4C8FD1; }
-    .kpi-card:nth-child(2){ border-left-color:#F2A93B; }
-    .kpi-card:nth-child(3){ border-left-color:#3DCB82; }
-    .kpi-card:nth-child(4){ border-left-color:#E8564F; }
-
-    .kpi-card span{
-        font-size:16px;
-        color:#1A1D21 !important;
-    }
-
-    #resultado{
-        gap:14px;
-    }
-
-    .loja-card{
-        background:#ffffff;
-        border:1px solid #ccc;
-        border-radius:0;
-        padding:0;
-        page-break-inside:avoid;
-        margin-bottom:14px;
-    }
-
-    .loja-titulo{
-        background:#1D2329;
-        color:#ffffff !important;
-        border-left:none;
-        padding:8px 14px;
-        font-size:14px;
-        margin-bottom:0;
-        -webkit-print-color-adjust:exact;
-        print-color-adjust:exact;
-    }
-
-    .ptl-card{
-        background:#ffffff;
-        border:none;
-        border-top:1px solid #E2E5E9;
-        border-left:none;
-        border-radius:0;
-        padding:10px 14px;
-        margin-bottom:0;
-        page-break-inside:avoid;
-    }
-
-    .ptl-titulo{
-        color:#1A1D21 !important;
-        font-size:12.5px;
-        margin-bottom:6px;
-    }
-
-    .tabela{
-        font-size:10.5px;
-        min-width:0;
-    }
-
-    .tabela thead{
-        display:table-header-group;
-        background:#F3F4F6 !important;
-        -webkit-print-color-adjust:exact;
-        print-color-adjust:exact;
-    }
-
-    .tabela th{
-        color:#5B6570;
-        border-color:#E2E5E9;
-    }
-
-    .tabela td{
-        color:#1A1D21;
-        border-color:#E2E5E9;
-    }
-
-    .tabela tbody tr{
-        page-break-inside:avoid;
-    }
-
-    .tabela tbody tr:nth-child(even){
-        background:#FAFBFC !important;
-        -webkit-print-color-adjust:exact;
-        print-color-adjust:exact;
-    }
-
-    .resumo-ptl{
-        color:#1A1D21 !important;
-        font-size:11px;
-    }
 }
