@@ -77,6 +77,37 @@
 
                 </div>
 
+                <!-- FATURAMENTO -->
+
+                <div class="upload-box">
+
+                    <label>
+                        💰 Faturamento
+                    </label>
+
+                    <label
+                        class="upload-btn"
+                        for="arquivoFaturamento">
+
+                        Selecionar Arquivo
+
+                    </label>
+
+                    <input
+                        type="file"
+                        id="arquivoFaturamento"
+                        accept=".txt">
+
+                    <div
+                        class="upload-nome"
+                        id="nomeFaturamento">
+
+                        Nenhum arquivo selecionado
+
+                    </div>
+
+                </div>
+
             </div>
 
             <br>
@@ -266,7 +297,7 @@
         </div>
 
         <!-- ===================================== -->
-        <!-- FATURAMENTO (aguardando dados) -->
+        <!-- FATURAMENTO -->
         <!-- ===================================== -->
 
         <div class="card">
@@ -275,8 +306,76 @@
                 Faturamento
             </h2>
 
-            <div class="placeholder">
-                Aguardando dados de Faturamento para montar este painel.
+            <div
+                class="placeholder"
+                id="placeholderFaturamento">
+
+                Aguardando o arquivo de Faturamento para montar este painel.
+
+            </div>
+
+            <div
+                id="painelFaturamento"
+                style="display:none;">
+
+                <div class="kpis" style="margin-bottom:20px;">
+
+                    <div class="kpi-card">
+                        <h3>Total Faturado</h3>
+                        <span id="kpiValorFaturado">R$ 0</span>
+                    </div>
+
+                    <div class="kpi-card">
+                        <h3>Quantidade Total</h3>
+                        <span id="kpiQuantidadeFaturada">0</span>
+                    </div>
+
+                    <div class="kpi-card">
+                        <h3>Linhas Faturadas</h3>
+                        <span id="kpiLinhasFaturadas">0</span>
+                    </div>
+
+                    <div class="kpi-card">
+                        <h3>Ticket Médio/Linha</h3>
+                        <span id="kpiTicketMedio">R$ 0</span>
+                    </div>
+
+                </div>
+
+                <div class="tabela-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Setor</th>
+                                <th>Linhas</th>
+                                <th>Quantidade</th>
+                                <th>Valor Faturado</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tbodyFaturamentoSetor">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <br>
+
+                <div class="acoes">
+
+                    <button
+                        class="btn-exportar"
+                        onclick="baixarImagemFaturamento()">
+
+                        📲 Baixar Imagem Executiva (WhatsApp)
+
+                    </button>
+
+                </div>
+
             </div>
 
         </div>

@@ -3,6 +3,7 @@
 // =====================================
 
 let dadosBase = [];
+let dadosFaturamento = [];
 let grafico = null;
 
 // =====================================
@@ -17,6 +18,21 @@ document
 
     document
     .getElementById("nomeBase")
+    .innerText =
+    arquivo
+    ? arquivo.name
+    : "Nenhum arquivo selecionado";
+
+});
+
+document
+.getElementById("arquivoFaturamento")
+.addEventListener("change", function(){
+
+    const arquivo = this.files[0];
+
+    document
+    .getElementById("nomeFaturamento")
     .innerText =
     arquivo
     ? arquivo.name
@@ -55,10 +71,15 @@ async function processar(){
     .getElementById("arquivoBase")
     .files[0];
 
-    if(!arquivo){
+    const arquivoFat =
+    document
+    .getElementById("arquivoFaturamento")
+    .files[0];
+
+    if(!arquivo && !arquivoFat){
 
         alert(
-            "Selecione o arquivo da Base."
+            "Selecione ao menos um arquivo (Base ou Faturamento)."
         );
 
         return;
@@ -69,115 +90,136 @@ async function processar(){
 
     try{
 
-        dadosBase =
-        await lerExcel(
-            arquivo,
-            "Base"
-        );
+        if(arquivo){
 
-        dadosBase =
-        dadosBase.map(linha=>{
+            dadosBase =
+            await lerExcel(
+                arquivo,
+                "Base"
+            );
 
-            const dataRaw =
-            linha["DATA"] ||
-            linha["Data"];
+            dadosBase =
+            dadosBase.map(linha=>{
 
-            let data = null;
+                const dataRaw =
+                linha["DATA"] ||
+                linha["Data"];
 
-            if(
-                dataRaw instanceof Date
-            ){
+                let data = null;
 
-                data = dataRaw;
+                if(
+                    dataRaw instanceof Date
+                ){
 
-            }
-            else if(
-                typeof dataRaw === "number"
-            ){
+                    data = dataRaw;
 
-                data =
-                XLSX.SSF.parse_date_code(
-                    dataRaw
-                );
-
-                data =
-                data
-                ? new Date(
-                    data.y,
-                    data.m - 1,
-                    data.d
-                )
-                : null;
-
-            }
-            else if(dataRaw){
-
-                const partes =
-                String(dataRaw)
-                .split(/[\/\-]/);
-
-                if(partes.length === 3){
+                }
+                else if(
+                    typeof dataRaw === "number"
+                ){
 
                     data =
-                    new Date(
-                        partes[2].length === 4
-                        ? `${partes[2]}-${partes[1]}-${partes[0]}`
-                        : dataRaw
+                    XLSX.SSF.parse_date_code(
+                        dataRaw
                     );
+
+                    data =
+                    data
+                    ? new Date(
+                        data.y,
+                        data.m - 1,
+                        data.d
+                    )
+                    : null;
+
+                }
+                else if(dataRaw){
+
+                    const partes =
+                    String(dataRaw)
+                    .split(/[\/\-]/);
+
+                    if(partes.length === 3){
+
+                        data =
+                        new Date(
+                            partes[2].length === 4
+                            ? `${partes[2]}-${partes[1]}-${partes[0]}`
+                            : dataRaw
+                        );
+
+                    }
 
                 }
 
-            }
+                return{
 
-            return{
+                    data,
 
-                data,
+                    caminhoes:
+                    Number(
+                        linha["Caminhões carregados"]
+                    ) || 0,
 
-                caminhoes:
-                Number(
-                    linha["Caminhões carregados"]
-                ) || 0,
+                    docas:
+                    Number(
+                        linha["Docas produzidas"]
+                    ) || 0,
 
-                docas:
-                Number(
-                    linha["Docas produzidas"]
-                ) || 0,
+                    lojas:
+                    Number(
+                        linha["Lojas Faturadas"]
+                    ) || 0,
 
-                lojas:
-                Number(
-                    linha["Lojas Faturadas"]
-                ) || 0,
+                    veiculosTurnoA:
+                    Number(
+                        linha["Veículos completados do Turno A"]
+                    ) || 0,
 
-                veiculosTurnoA:
-                Number(
-                    linha["Veículos completados do Turno A"]
-                ) || 0,
+                    foraEscala:
+                    Number(
+                        linha["Cargas produzidas fora da escala"]
+                    ) || 0
 
-                foraEscala:
-                Number(
-                    linha["Cargas produzidas fora da escala"]
-                ) || 0
+                };
 
-            };
+            })
+            .filter(
+                item => item.data
+            )
+            .sort(
+                (a,b) => a.data - b.data
+            );
 
-        })
-        .filter(
-            item => item.data
-        )
-        .sort(
-            (a,b) => a.data - b.data
-        );
+            atualizarKPIs();
 
-        atualizarKPIs();
+            renderizarGrafico();
 
-        renderizarGrafico();
+            renderizarTabela();
 
-        renderizarTabela();
+            console.log(
+                "Base processada:",
+                dadosBase
+            );
 
-        console.log(
-            "Base processada:",
-            dadosBase
-        );
+        }
+
+        if(arquivoFat){
+
+            dadosFaturamento =
+            await lerFaturamentoTXT(
+                arquivoFat
+            );
+
+            atualizarFaturamento();
+
+            console.log(
+                "Faturamento processado:",
+                dadosFaturamento.length,
+                "linhas"
+            );
+
+        }
 
     }
 
@@ -186,7 +228,7 @@ async function processar(){
         console.error(erro);
 
         alert(
-            "Erro ao processar o arquivo. Confira se a aba 'Base' existe e tem os cabeçalhos esperados."
+            "Erro ao processar os arquivos. Confira os formatos esperados."
         );
 
     }
@@ -255,6 +297,203 @@ function lerExcel(arquivo, nomeAba){
 
         leitor.readAsArrayBuffer(
             arquivo
+        );
+
+    });
+
+}
+
+// =====================================
+// LEITURA FATURAMENTO (TXT)
+// =====================================
+// Arquivo vem de exportação do sistema (TOTVS/Consinco),
+// separado por ";". Pode vir com ou sem bloco de bytes
+// nulos no início (lixo de exportação) — removemos antes
+// de interpretar. Lê pelo nome real das colunas quando
+// o arquivo tem cabeçalho (confirmado no arquivo de
+// referência); se não tiver, cai para as posições fixas
+// já validadas como equivalentes:
+//
+//   Setor          -> DESCLINHASEPAR   (posição 1)
+//   SKU            -> SEQPRODUTO       (posição 9)
+//   Data/Hora      -> DTAHORMOVIMENTO  (posição 13)
+//   Quantidade     -> QTD_VOLUMES      (posição 14)
+//   Valor Faturado -> VLRLIQVENDA      (posição 16)
+//   Tarefa/Operador-> DESTINO          (posição 17)
+
+const COLUNAS_FATURAMENTO = {
+
+    setor:      { nome:"DESCLINHASEPAR",  posicao:1  },
+    sku:        { nome:"SEQPRODUTO",      posicao:9  },
+    dataHora:   { nome:"DTAHORMOVIMENTO", posicao:13 },
+    quantidade: { nome:"QTD_VOLUMES",     posicao:14 },
+    valor:      { nome:"VLRLIQVENDA",     posicao:16 },
+    tarefa:     { nome:"DESTINO",         posicao:17 },
+    operador:   { nome:"SEQPESSOA",       posicao:8  }
+
+};
+
+function lerFaturamentoTXT(arquivo){
+
+    return new Promise((resolve,reject)=>{
+
+        const leitor =
+        new FileReader();
+
+        leitor.onload = e=>{
+
+            try{
+
+                const textoBruto =
+                e.target.result;
+
+                // remove eventual bloco de bytes nulos/controle
+                // do início do arquivo
+                const textoLimpo =
+                textoBruto.replace(
+                    /^[\x00-\x1F]+/,
+                    ""
+                );
+
+                const linhas =
+                textoLimpo
+                .split(/\r?\n/)
+                .filter(l=>l.trim());
+
+                if(!linhas.length){
+
+                    resolve([]);
+                    return;
+
+                }
+
+                // detecta se a primeira linha é um
+                // cabeçalho de verdade (contém as colunas
+                // esperadas) ou já é dado
+                const primeiraLinha =
+                linhas[0].split(";")
+                .map(c=>c.trim().toUpperCase());
+
+                const temCabecalho =
+                primeiraLinha.includes(
+                    COLUNAS_FATURAMENTO.setor.nome
+                );
+
+                // monta o índice de cada coluna: pelo nome,
+                // se houver cabeçalho; senão, pela posição
+                // fixa já validada
+                const indice = {};
+
+                Object.keys(COLUNAS_FATURAMENTO).forEach(chave=>{
+
+                    const config =
+                    COLUNAS_FATURAMENTO[chave];
+
+                    indice[chave] =
+                    temCabecalho
+                    ? primeiraLinha.indexOf(config.nome)
+                    : config.posicao;
+
+                });
+
+                const linhasDados =
+                temCabecalho
+                ? linhas.slice(1)
+                : linhas;
+
+                const dados = [];
+
+                linhasDados.forEach(linha=>{
+
+                    const campos =
+                    linha.split(";");
+
+                    if(campos.length < 14) return;
+
+                    const setor =
+                    (campos[indice.setor] || "").trim() ||
+                    "SEM SETOR";
+
+                    const sku =
+                    (campos[indice.sku] || "").trim();
+
+                    const dataHoraTexto =
+                    (campos[indice.dataHora] || "").trim();
+
+                    let dataHora = null;
+
+                    const partesData =
+                    dataHoraTexto.match(
+                        /(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/
+                    );
+
+                    if(partesData){
+
+                        dataHora = new Date(
+                            Number(partesData[3]),
+                            Number(partesData[2]) - 1,
+                            Number(partesData[1]),
+                            Number(partesData[4]),
+                            Number(partesData[5])
+                        );
+
+                    }
+
+                    const quantidade =
+                    parseFloat(
+                        (campos[indice.quantidade] || "0")
+                        .replace(".","")
+                        .replace(",",".")
+                    ) || 0;
+
+                    const valor =
+                    parseFloat(
+                        (campos[indice.valor] || "0")
+                        .replace(".","")
+                        .replace(",",".")
+                    ) || 0;
+
+                    const tarefaTexto =
+                    (campos[indice.tarefa] || "").trim();
+
+                    const matOperador =
+                    tarefaTexto.match(
+                        /STOK\s*(\d+)/i
+                    );
+
+                    const operador =
+                    matOperador
+                    ? matOperador[1]
+                    : (campos[indice.operador] || "").trim();
+
+                    dados.push({
+
+                        setor,
+                        sku,
+                        dataHora,
+                        quantidade,
+                        valor,
+                        operador
+
+                    });
+
+                });
+
+                resolve(dados);
+
+            }catch(erro){
+
+                reject(erro);
+
+            }
+
+        };
+
+        leitor.onerror = reject;
+
+        leitor.readAsText(
+            arquivo,
+            "iso-8859-1"
         );
 
     });
@@ -469,6 +708,362 @@ function renderizarTabela(){
         <td>${somar("foraEscala").toLocaleString("pt-BR")}</td>
     </tr>
     `;
+
+}
+
+// =====================================
+// FATURAMENTO — AGREGAÇÃO E RENDER
+// =====================================
+
+function obterResumoFaturamento(){
+
+    const porSetor = {};
+
+    let totalValor = 0;
+    let totalQuantidade = 0;
+
+    dadosFaturamento.forEach(item=>{
+
+        if(!porSetor[item.setor]){
+
+            porSetor[item.setor] = {
+
+                setor: item.setor,
+                linhas: 0,
+                quantidade: 0,
+                valor: 0
+
+            };
+
+        }
+
+        porSetor[item.setor].linhas++;
+        porSetor[item.setor].quantidade += item.quantidade;
+        porSetor[item.setor].valor += item.valor;
+
+        totalValor += item.valor;
+        totalQuantidade += item.quantidade;
+
+    });
+
+    const setores =
+    Object.values(porSetor)
+    .sort((a,b)=>b.valor-a.valor);
+
+    const datas =
+    dadosFaturamento
+    .map(x=>x.dataHora)
+    .filter(Boolean);
+
+    return{
+
+        totalValor,
+        totalQuantidade,
+        totalLinhas: dadosFaturamento.length,
+        setores,
+
+        periodoInicio:
+        datas.length
+        ? new Date(Math.min(...datas))
+        : null,
+
+        periodoFim:
+        datas.length
+        ? new Date(Math.max(...datas))
+        : null
+
+    };
+
+}
+
+function atualizarFaturamento(){
+
+    if(!dadosFaturamento.length){
+
+        document.getElementById(
+            "placeholderFaturamento"
+        ).style.display = "block";
+
+        document.getElementById(
+            "painelFaturamento"
+        ).style.display = "none";
+
+        return;
+
+    }
+
+    document.getElementById(
+        "placeholderFaturamento"
+    ).style.display = "none";
+
+    document.getElementById(
+        "painelFaturamento"
+    ).style.display = "block";
+
+    const resumo =
+    obterResumoFaturamento();
+
+    const formatarMoeda =
+    valor =>
+    valor.toLocaleString(
+        "pt-BR",
+        { style:"currency", currency:"BRL" }
+    );
+
+    document.getElementById("kpiValorFaturado").innerText =
+    formatarMoeda(resumo.totalValor);
+
+    document.getElementById("kpiQuantidadeFaturada").innerText =
+    resumo.totalQuantidade.toLocaleString("pt-BR");
+
+    document.getElementById("kpiLinhasFaturadas").innerText =
+    resumo.totalLinhas.toLocaleString("pt-BR");
+
+    document.getElementById("kpiTicketMedio").innerText =
+    formatarMoeda(
+        resumo.totalLinhas
+        ? resumo.totalValor / resumo.totalLinhas
+        : 0
+    );
+
+    const tbody =
+    document.getElementById(
+        "tbodyFaturamentoSetor"
+    );
+
+    let html = "";
+
+    resumo.setores.forEach(item=>{
+
+        html += `
+        <tr>
+            <td>${item.setor}</td>
+            <td>${item.linhas.toLocaleString("pt-BR")}</td>
+            <td>${item.quantidade.toLocaleString("pt-BR")}</td>
+            <td>${formatarMoeda(item.valor)}</td>
+        </tr>
+        `;
+
+    });
+
+    tbody.innerHTML = html;
+
+}
+
+// =====================================
+// BAIXAR IMAGEM EXECUTIVA — FATURAMENTO
+// (mesmo estilo usado no relatório da
+// Pendência PTL: cabeçalho escuro + ranking
+// com barra de proporção por setor)
+// =====================================
+
+async function baixarImagemFaturamento(){
+
+    if(!dadosFaturamento.length){
+
+        alert(
+            "Nenhum dado de Faturamento processado ainda."
+        );
+
+        return;
+
+    }
+
+    const resumo =
+    obterResumoFaturamento();
+
+    const formatarMoeda =
+    valor =>
+    valor.toLocaleString(
+        "pt-BR",
+        { style:"currency", currency:"BRL" }
+    );
+
+    const top =
+    resumo.setores.slice(0,8);
+
+    const maiorValor =
+    top.length ? top[0].valor : 1;
+
+    const periodoTexto =
+    resumo.periodoInicio && resumo.periodoFim
+    ? `${resumo.periodoInicio.toLocaleDateString("pt-BR")} a ${resumo.periodoFim.toLocaleDateString("pt-BR")}`
+    : "período não identificado";
+
+    const agora =
+    new Date().toLocaleString(
+        "pt-BR",
+        {
+            day:"2-digit",
+            month:"2-digit",
+            year:"numeric",
+            hour:"2-digit",
+            minute:"2-digit"
+        }
+    );
+
+    const card =
+    document.createElement("div");
+
+    card.style.width = "1000px";
+    card.style.background = "#ffffff";
+    card.style.fontFamily = "'Inter','Segoe UI',sans-serif";
+    card.style.color = "#1A1D21";
+    card.style.overflow = "hidden";
+    card.style.borderRadius = "10px";
+    card.style.border = "1px solid #E2E5E9";
+
+    let linhasSetores = "";
+
+    top.forEach((item,indice)=>{
+
+        const largura =
+        Math.max(
+            8,
+            Math.round((item.valor / maiorValor) * 100)
+        );
+
+        linhasSetores += `
+        <div style="
+            padding:14px 28px;
+            border-bottom:1px solid #EEF0F2;
+        ">
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:baseline;
+                gap:12px;
+            ">
+                <div style="
+                    font-size:14px;
+                    font-weight:700;
+                    color:#1A1D21;
+                ">
+                    ${indice+1}º · ${item.setor}
+                </div>
+
+                <div style="
+                    font-family:'JetBrains Mono',Consolas,monospace;
+                    font-size:16px;
+                    font-weight:700;
+                    color:#3DCB82;
+                    white-space:nowrap;
+                ">
+                    ${formatarMoeda(item.valor)}
+                </div>
+            </div>
+
+            <div style="
+                font-size:11px;
+                color:#8B97A3;
+                margin-top:2px;
+            ">
+                ${item.linhas.toLocaleString("pt-BR")} linhas ·
+                ${item.quantidade.toLocaleString("pt-BR")} unid.
+            </div>
+
+            <div style="
+                margin-top:8px;
+                height:6px;
+                background:#EEF0F2;
+                border-radius:3px;
+                overflow:hidden;
+            ">
+                <div style="
+                    height:100%;
+                    width:${largura}%;
+                    background:#3DCB82;
+                    border-radius:3px;
+                "></div>
+            </div>
+
+        </div>
+        `;
+
+    });
+
+    card.innerHTML = `
+
+        <div style="
+            background:#1D2329;
+            padding:22px 28px;
+            border-bottom:3px solid #3DCB82;
+        ">
+            <div style="
+                font-family:'Oswald','Segoe UI',sans-serif;
+                font-size:22px;
+                font-weight:700;
+                letter-spacing:.03em;
+                text-transform:uppercase;
+                color:#ffffff;
+            ">💰 Relatório Executivo — Faturamento</div>
+
+            <div style="
+                font-size:12px;
+                color:#9AA5B1;
+                margin-top:4px;
+            ">Período: ${periodoTexto} · gerado em ${agora}</div>
+        </div>
+
+        <div style="
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:1px;
+            background:#EEF0F2;
+        ">
+
+            <div style="background:#fff;padding:18px 24px;">
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8B97A3;">Total Faturado</div>
+                <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:22px;font-weight:700;color:#3DCB82;margin-top:6px;">
+                    ${formatarMoeda(resumo.totalValor)}
+                </div>
+            </div>
+
+            <div style="background:#fff;padding:18px 24px;">
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8B97A3;">Quantidade Total</div>
+                <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:22px;font-weight:700;color:#4C8FD1;margin-top:6px;">
+                    ${resumo.totalQuantidade.toLocaleString("pt-BR")}
+                </div>
+            </div>
+
+            <div style="background:#fff;padding:18px 24px;">
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8B97A3;">Linhas Faturadas</div>
+                <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:22px;font-weight:700;color:#F2A93B;margin-top:6px;">
+                    ${resumo.totalLinhas.toLocaleString("pt-BR")}
+                </div>
+            </div>
+
+        </div>
+
+        <div style="
+            padding:16px 28px 8px;
+            font-size:11px;
+            font-weight:700;
+            letter-spacing:.06em;
+            text-transform:uppercase;
+            color:#8B97A3;
+        ">Top Setores por Valor Faturado</div>
+
+        ${linhasSetores}
+    `;
+
+    document.body.appendChild(card);
+
+    const canvas =
+    await html2canvas(card, { scale:2 });
+
+    const link =
+    document.createElement("a");
+
+    link.download = "relatorio-executivo-faturamento.png";
+
+    link.href =
+    canvas.toDataURL("image/png");
+
+    link.click();
+
+    card.remove();
 
 }
 
