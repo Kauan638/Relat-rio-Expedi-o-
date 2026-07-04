@@ -1155,6 +1155,269 @@ function exportarExcel(){
 // RELATÓRIO EXECUTIVO (IMPRESSÃO)
 // =====================================
 
+// =====================================
+// BAIXAR IMAGEM EXECUTIVA — BASE (TURNO B)
+// (mesmo estilo do relatório de Faturamento)
+// =====================================
+
+async function baixarImagemExecutiva(){
+
+    if(!dadosBase.length){
+
+        alert(
+            "Nenhum dado para gerar a imagem. Processe o arquivo primeiro."
+        );
+
+        return;
+
+    }
+
+    if(typeof html2canvas !== "function"){
+
+        alert(
+            "Biblioteca html2canvas não carregou. Verifique sua conexão e recarregue a página."
+        );
+
+        return;
+
+    }
+
+    mostrarLoading();
+
+    try{
+
+        const somar =
+        campo =>
+        dadosBase.reduce(
+            (s,x)=>s+x[campo],
+            0
+        );
+
+        const dias = dadosBase.length;
+
+        const totalCaminhoes = somar("caminhoes");
+        const totalDocas = somar("docas");
+        const totalLojas = somar("lojas");
+        const totalVeiculosA = somar("veiculosTurnoA");
+        const totalForaEscala = somar("foraEscala");
+
+        const periodoTexto =
+        `${dadosBase[0].data.toLocaleDateString("pt-BR")} a ${dadosBase[dias-1].data.toLocaleDateString("pt-BR")}`;
+
+        const agora =
+        new Date().toLocaleString(
+            "pt-BR",
+            {
+                day:"2-digit",
+                month:"2-digit",
+                year:"numeric",
+                hour:"2-digit",
+                minute:"2-digit"
+            }
+        );
+
+        const maiorCaminhoes =
+        Math.max(...dadosBase.map(x=>x.caminhoes), 1);
+
+        let linhasDias = "";
+
+        dadosBase.forEach(item=>{
+
+            const largura =
+            Math.max(
+                8,
+                Math.round((item.caminhoes / maiorCaminhoes) * 100)
+            );
+
+            linhasDias += `
+            <div style="
+                padding:14px 28px;
+                border-bottom:1px solid #EEF0F2;
+            ">
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:baseline;
+                    gap:12px;
+                ">
+                    <div style="
+                        font-size:14px;
+                        font-weight:700;
+                        color:#1A1D21;
+                    ">
+                        📅 ${item.data.toLocaleDateString("pt-BR")}
+                    </div>
+
+                    <div style="
+                        font-family:'JetBrains Mono',Consolas,monospace;
+                        font-size:16px;
+                        font-weight:700;
+                        color:#4C8FD1;
+                        white-space:nowrap;
+                    ">
+                        ${item.caminhoes} caminhões
+                    </div>
+                </div>
+
+                <div style="
+                    font-size:11px;
+                    color:#8B97A3;
+                    margin-top:2px;
+                ">
+                    🚪 ${item.docas} docas ·
+                    🏪 ${item.lojas} lojas faturadas ·
+                    🔁 ${item.veiculosTurnoA} veíc. Turno A ·
+                    ⚠️ ${item.foraEscala} fora da escala
+                </div>
+
+                <div style="
+                    margin-top:8px;
+                    height:6px;
+                    background:#EEF0F2;
+                    border-radius:3px;
+                    overflow:hidden;
+                ">
+                    <div style="
+                        height:100%;
+                        width:${largura}%;
+                        background:#4C8FD1;
+                        border-radius:3px;
+                    "></div>
+                </div>
+
+            </div>
+            `;
+
+        });
+
+        const card =
+        document.createElement("div");
+
+        card.style.width = "1000px";
+        card.style.background = "#ffffff";
+        card.style.fontFamily = "'Inter','Segoe UI',sans-serif";
+        card.style.color = "#1A1D21";
+        card.style.overflow = "hidden";
+        card.style.borderRadius = "10px";
+        card.style.border = "1px solid #E2E5E9";
+
+        card.innerHTML = `
+
+            <div style="
+                background:#1D2329;
+                padding:22px 28px;
+                border-bottom:3px solid #F2A93B;
+            ">
+                <div style="
+                    font-family:'Oswald','Segoe UI',sans-serif;
+                    font-size:22px;
+                    font-weight:700;
+                    letter-spacing:.03em;
+                    text-transform:uppercase;
+                    color:#ffffff;
+                ">🚛 Relatório Executivo — Expedição</div>
+
+                <div style="
+                    font-size:12px;
+                    color:#9AA5B1;
+                    margin-top:4px;
+                ">Período: ${periodoTexto} · gerado em ${agora}</div>
+            </div>
+
+            <div style="
+                display:grid;
+                grid-template-columns:repeat(5,1fr);
+                gap:1px;
+                background:#EEF0F2;
+            ">
+
+                <div style="background:#fff;padding:16px 14px;">
+                    <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8B97A3;">Caminhões</div>
+                    <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:19px;font-weight:700;color:#4C8FD1;margin-top:6px;">
+                        ${totalCaminhoes.toLocaleString("pt-BR")}
+                    </div>
+                </div>
+
+                <div style="background:#fff;padding:16px 14px;">
+                    <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8B97A3;">Docas</div>
+                    <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:19px;font-weight:700;color:#F2A93B;margin-top:6px;">
+                        ${totalDocas.toLocaleString("pt-BR")}
+                    </div>
+                </div>
+
+                <div style="background:#fff;padding:16px 14px;">
+                    <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8B97A3;">Lojas Faturadas</div>
+                    <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:19px;font-weight:700;color:#3DCB82;margin-top:6px;">
+                        ${totalLojas.toLocaleString("pt-BR")}
+                    </div>
+                </div>
+
+                <div style="background:#fff;padding:16px 14px;">
+                    <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8B97A3;">Veículos Turno A</div>
+                    <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:19px;font-weight:700;color:#8B97A3;margin-top:6px;">
+                        ${totalVeiculosA.toLocaleString("pt-BR")}
+                    </div>
+                </div>
+
+                <div style="background:#fff;padding:16px 14px;">
+                    <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#8B97A3;">Fora da Escala</div>
+                    <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:19px;font-weight:700;color:#E8564F;margin-top:6px;">
+                        ${totalForaEscala.toLocaleString("pt-BR")}
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="
+                padding:16px 28px 8px;
+                font-size:11px;
+                font-weight:700;
+                letter-spacing:.06em;
+                text-transform:uppercase;
+                color:#8B97A3;
+            ">Detalhamento por Dia</div>
+
+            ${linhasDias}
+        `;
+
+        document.body.appendChild(card);
+
+        const canvas =
+        await html2canvas(card, { scale:2 });
+
+        const link =
+        document.createElement("a");
+
+        link.download = "relatorio-executivo-expedicao.png";
+
+        link.href =
+        canvas.toDataURL("image/png");
+
+        link.click();
+
+        card.remove();
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        alert(
+            "Erro ao gerar a imagem executiva."
+        );
+
+    }
+
+    finally{
+
+        ocultarLoading();
+
+    }
+
+}
+
 function imprimirRelatorioExecutivo(){
 
     if(!dadosBase.length){
