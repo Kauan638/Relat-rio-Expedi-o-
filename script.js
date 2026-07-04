@@ -869,6 +869,20 @@ async function baixarImagemFaturamento(){
 
     }
 
+    if(typeof html2canvas !== "function"){
+
+        alert(
+            "Biblioteca html2canvas não carregou. Verifique sua conexão e recarregue a página."
+        );
+
+        return;
+
+    }
+
+    mostrarLoading();
+
+    try{
+
     const resumo =
     obterResumoFaturamento();
 
@@ -1064,6 +1078,24 @@ async function baixarImagemFaturamento(){
     link.click();
 
     card.remove();
+
+    }
+
+    catch(erro){
+
+        console.error(erro);
+
+        alert(
+            "Erro ao gerar a imagem executiva do Faturamento."
+        );
+
+    }
+
+    finally{
+
+        ocultarLoading();
+
+    }
 
 }
 
