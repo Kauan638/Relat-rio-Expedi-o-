@@ -92,132 +92,13 @@ async function processar(){
 
         if(arquivo){
 
-            dadosBase =
-            await lerExcel(
-                arquivo,
-                "Base"
-            );
-
-            dadosBase =
-            dadosBase.map(linha=>{
-
-                const dataRaw =
-                linha["DATA"] ||
-                linha["Data"];
-
-                let data = null;
-
-                if(
-                    dataRaw instanceof Date
-                ){
-
-                    data = dataRaw;
-
-                }
-                else if(
-                    typeof dataRaw === "number"
-                ){
-
-                    data =
-                    XLSX.SSF.parse_date_code(
-                        dataRaw
-                    );
-
-                    data =
-                    data
-                    ? new Date(
-                        data.y,
-                        data.m - 1,
-                        data.d
-                    )
-                    : null;
-
-                }
-                else if(dataRaw){
-
-                    const partes =
-                    String(dataRaw)
-                    .split(/[\/\-]/);
-
-                    if(partes.length === 3){
-
-                        data =
-                        new Date(
-                            partes[2].length === 4
-                            ? `${partes[2]}-${partes[1]}-${partes[0]}`
-                            : dataRaw
-                        );
-
-                    }
-
-                }
-
-                return{
-
-                    data,
-
-                    caminhoes:
-                    Number(
-                        linha["Caminhões carregados"]
-                    ) || 0,
-
-                    docas:
-                    Number(
-                        linha["Docas produzidas"]
-                    ) || 0,
-
-                    lojas:
-                    Number(
-                        linha["Lojas Faturadas"]
-                    ) || 0,
-
-                    veiculosTurnoA:
-                    Number(
-                        linha["Veículos completados do Turno A"]
-                    ) || 0,
-
-                    foraEscala:
-                    Number(
-                        linha["Cargas produzidas fora da escala"]
-                    ) || 0
-
-                };
-
-            })
-            .filter(
-                item => item.data
-            )
-            .sort(
-                (a,b) => a.data - b.data
-            );
-
-            atualizarKPIs();
-
-            renderizarGrafico();
-
-            renderizarTabela();
-
-            console.log(
-                "Base processada:",
-                dadosBase
-            );
+            await processarArquivoBase(arquivo);
 
         }
 
         if(arquivoFat){
 
-            dadosFaturamento =
-            await lerFaturamentoTXT(
-                arquivoFat
-            );
-
-            atualizarFaturamento();
-
-            console.log(
-                "Faturamento processado:",
-                dadosFaturamento.length,
-                "linhas"
-            );
+            await processarArquivoFaturamento(arquivoFat);
 
         }
 
@@ -238,6 +119,144 @@ async function processar(){
         ocultarLoading();
 
     }
+
+}
+
+// =====================================
+// PROCESSAMENTO PURO (sem DOM/alert) —
+// recebe o File já resolvido. Usado pelo
+// botão manual (via processar acima) e
+// pela sincronização automática (sync.js).
+// =====================================
+
+async function processarArquivoBase(arquivo){
+
+    dadosBase =
+    await lerExcel(
+        arquivo,
+        "Base"
+    );
+
+    dadosBase =
+    dadosBase.map(linha=>{
+
+        const dataRaw =
+        linha["DATA"] ||
+        linha["Data"];
+
+        let data = null;
+
+        if(
+            dataRaw instanceof Date
+        ){
+
+            data = dataRaw;
+
+        }
+        else if(
+            typeof dataRaw === "number"
+        ){
+
+            data =
+            XLSX.SSF.parse_date_code(
+                dataRaw
+            );
+
+            data =
+            data
+            ? new Date(
+                data.y,
+                data.m - 1,
+                data.d
+            )
+            : null;
+
+        }
+        else if(dataRaw){
+
+            const partes =
+            String(dataRaw)
+            .split(/[\/\-]/);
+
+            if(partes.length === 3){
+
+                data =
+                new Date(
+                    partes[2].length === 4
+                    ? `${partes[2]}-${partes[1]}-${partes[0]}`
+                    : dataRaw
+                );
+
+            }
+
+        }
+
+        return{
+
+            data,
+
+            caminhoes:
+            Number(
+                linha["Caminhões carregados"]
+            ) || 0,
+
+            docas:
+            Number(
+                linha["Docas produzidas"]
+            ) || 0,
+
+            lojas:
+            Number(
+                linha["Lojas Faturadas"]
+            ) || 0,
+
+            veiculosTurnoA:
+            Number(
+                linha["Veículos completados do Turno A"]
+            ) || 0,
+
+            foraEscala:
+            Number(
+                linha["Cargas produzidas fora da escala"]
+            ) || 0
+
+        };
+
+    })
+    .filter(
+        item => item.data
+    )
+    .sort(
+        (a,b) => a.data - b.data
+    );
+
+    atualizarKPIs();
+
+    renderizarGrafico();
+
+    renderizarTabela();
+
+    console.log(
+        "Base processada:",
+        dadosBase
+    );
+
+}
+
+async function processarArquivoFaturamento(arquivoFat){
+
+    dadosFaturamento =
+    await lerFaturamentoTXT(
+        arquivoFat
+    );
+
+    atualizarFaturamento();
+
+    console.log(
+        "Faturamento processado:",
+        dadosFaturamento.length,
+        "linhas"
+    );
 
 }
 
