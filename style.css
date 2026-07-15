@@ -534,8 +534,77 @@ LANÇAMENTO MANUAL DO DIA
 }
 
 /* =========================
-HISTÓRICO
+FATURAMENTO POR SETOR
 ========================= */
+
+.faturamento-arquivo-box{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 16px;
+    border-radius:var(--radius-sm);
+    background:var(--surface-alt);
+    border:1px solid var(--border-light);
+    margin-bottom:4px;
+}
+
+.faturamento-nome-arquivo{
+    font-family:var(--font-mono);
+    font-size:.82rem;
+    color:var(--text);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.faturamento-arquivo-box .btn-retirar{
+    width:auto;
+    flex-shrink:0;
+    padding:10px 14px;
+}
+
+.faturamento-filtro-horario{
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+    margin-bottom:18px;
+}
+
+.faturamento-checkbox-label{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:.82rem;
+    font-weight:700;
+    color:var(--text);
+    cursor:pointer;
+}
+
+.faturamento-checkbox-label input[type="checkbox"]{
+    width:18px;
+    height:18px;
+    accent-color:var(--amber);
+    cursor:pointer;
+}
+
+.faturamento-horario-grid{
+    margin-top:14px;
+    margin-bottom:0;
+}
+
+.faturamento-horario-dica{
+    margin-top:10px;
+    margin-bottom:0;
+}
+
+.faturamento-preview{
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+
+
 
 .historico-cabecalho{
     display:flex;

@@ -45,6 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btn) excluirRegistroManual(btn.dataset.data);
         });
 
+    document.getElementById('inputFaturamento')
+        .addEventListener('change', e => handleArquivoFaturamento(e.target.files[0]));
+
+    document.getElementById('faturamentoFiltrarHorario')
+        .addEventListener('change', e => {
+            const mostrar = e.target.checked;
+            document.getElementById('faturamentoHorarioBox').style.display = mostrar ? 'grid' : 'none';
+            document.getElementById('faturamentoHorarioDica').style.display = mostrar ? 'block' : 'none';
+        });
+
     const ultimoCliente = localStorage.getItem('carregamento_ultimoCliente');
     if (ultimoCliente) {
         document.getElementById('campoCliente').value = ultimoCliente;
@@ -661,6 +671,339 @@ function baixarBlob(blob, nome) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/* ---------- FATURAMENTO POR SETOR ---------- */
+
+let _faturamentoArquivo = null;
+let _dadosFaturamentoAtual = null;
+
+function handleArquivoFaturamento(file) {
+
+    if (!file) return;
+
+    _faturamentoArquivo = file;
+
+    document.getElementById('faturamentoNomeArquivo').textContent = file.name;
+    document.getElementById('faturamentoArquivoBox').style.display = 'flex';
+    document.getElementById('faturamentoVazio').style.display = 'none';
+
+    document.getElementById('faturamentoResultadoCard').style.display = 'none';
+    _dadosFaturamentoAtual = null;
+}
+
+function retirarArquivoFaturamento() {
+
+    _faturamentoArquivo = null;
+
+    document.getElementById('inputFaturamento').value = '';
+    document.getElementById('faturamentoArquivoBox').style.display = 'none';
+    document.getElementById('faturamentoVazio').style.display = 'block';
+
+    document.getElementById('faturamentoResultadoCard').style.display = 'none';
+    _dadosFaturamentoAtual = null;
+}
+
+function lerArquivoComoTextoISO88591(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const bytes = new Uint8Array(reader.result);
+                const decoder = new TextDecoder('iso-8859-1');
+                const texto = decoder.decode(bytes).replace(/\u0000/g, '');
+                resolve(texto);
+            } catch (err) {
+                reject(err);
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function parseNumeroBR(str) {
+    if (!str) return 0;
+    const n = parseFloat(str.trim().replace(',', '.'));
+    return isNaN(n) ? 0 : n;
+}
+
+function extrairHoraDeDataHora(str) {
+    if (!str) return null;
+    const partes = str.trim().split(' ');
+    return partes.length > 1 ? partes[1].slice(0, 5) : null; // "HH:MM"
+}
+
+function parseFaturamentoTXT(texto) {
+
+    const linhas = texto.split(/\r\n|\n|\r/).filter(l => l.trim() !== '');
+
+    if (linhas.length < 2) return { erro: 'vazio' };
+
+    const cabecalho = linhas[0].split(';').map(h => h.trim().toUpperCase());
+    const indice = nome => cabecalho.indexOf(nome);
+
+    const iSetor      = indice('DESCLINHASEPAR');
+    const iDataHora    = indice('DTAHORMOVIMENTO');
+    const iQtdVolumes = indice('QTD_VOLUMES');
+    const iValor       = indice('VLRLIQVENDA');
+
+    if (iSetor === -1 || iDataHora === -1 || iValor === -1) {
+        return { erro: 'colunas' };
+    }
+
+    const registros = [];
+
+    for (let i = 1; i < linhas.length; i++) {
+
+        const campos = linhas[i].split(';');
+        if (campos.length <= Math.max(iSetor, iDataHora, iValor)) continue;
+
+        const setor = campos[iSetor].trim() || 'SEM SETOR';
+        const hora  = extrairHoraDeDataHora(campos[iDataHora]);
+        const valor = parseNumeroBR(campos[iValor]);
+        const qtd   = iQtdVolumes > -1 ? parseNumeroBR(campos[iQtdVolumes]) : 0;
+
+        registros.push({ setor, hora, valor, qtd });
+    }
+
+    return { registros };
+}
+
+function horaDentroDoIntervalo(hora, de, ate) {
+    if (!hora) return false;
+    if (de <= ate) return hora >= de && hora <= ate;
+    return hora >= de || hora <= ate; // vira a madrugada (ex: 22:00 até 07:00)
+}
+
+function agruparFaturamentoPorSetor(registros) {
+
+    const mapa = new Map();
+
+    registros.forEach(r => {
+        if (!mapa.has(r.setor)) {
+            mapa.set(r.setor, { nome: r.setor, valor: 0, qtd: 0, linhas: 0 });
+        }
+        const s = mapa.get(r.setor);
+        s.valor  += r.valor;
+        s.qtd    += r.qtd;
+        s.linhas += 1;
+    });
+
+    return [...mapa.values()].sort((a, b) => b.valor - a.valor);
+}
+
+async function processarFaturamento() {
+
+    if (!_faturamentoArquivo) {
+        mostrarToast('Escolhe o arquivo de faturamento primeiro.', 'erro');
+        return;
+    }
+
+    try {
+
+        const texto = await lerArquivoComoTextoISO88591(_faturamentoArquivo);
+        const { registros, erro } = parseFaturamentoTXT(texto);
+
+        if (erro === 'vazio') {
+            mostrarToast('O arquivo está vazio ou não tem linhas de dado.', 'erro');
+            return;
+        }
+
+        if (erro === 'colunas') {
+            mostrarToast('Não encontrei as colunas esperadas (setor / data-hora / valor) no arquivo.', 'erro');
+            return;
+        }
+
+        if (registros.length === 0) {
+            mostrarToast('Nenhuma linha de dado encontrada no arquivo.', 'erro');
+            return;
+        }
+
+        const filtrarHorario = document.getElementById('faturamentoFiltrarHorario').checked;
+        let registrosFiltrados = registros;
+        let horarioTexto = null;
+
+        if (filtrarHorario) {
+
+            const de  = document.getElementById('faturamentoHoraDe').value;
+            const ate = document.getElementById('faturamentoHoraAte').value;
+
+            if (!de || !ate) {
+                mostrarToast('Preenche o horário De e Até.', 'erro');
+                return;
+            }
+
+            registrosFiltrados = registros.filter(r => horaDentroDoIntervalo(r.hora, de, ate));
+            horarioTexto = `${de} às ${ate}`;
+
+            if (registrosFiltrados.length === 0) {
+                mostrarToast('Nenhum lançamento nesse intervalo de horário.', 'erro');
+                return;
+            }
+        }
+
+        const setores          = agruparFaturamentoPorSetor(registrosFiltrados);
+        const totalFaturado    = registrosFiltrados.reduce((s, r) => s + r.valor, 0);
+        const quantidadeTotal  = registrosFiltrados.reduce((s, r) => s + r.qtd, 0);
+        const linhasFaturadas  = registrosFiltrados.length;
+
+        const agora = new Date();
+        const geradoEm = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()}, `
+            + `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+
+        _dadosFaturamentoAtual = {
+            periodo: horarioTexto ? `Faturamento das ${horarioTexto}` : 'Faturamento completo do arquivo',
+            geradoEm,
+            totalFaturado,
+            quantidadeTotal,
+            linhasFaturadas,
+            setores,
+            rotulo: (horarioTexto || 'completo').replace(/[: ]/g, '-')
+        };
+
+        renderFaturamentoInline(_dadosFaturamentoAtual);
+        mostrarToast('Relatório de faturamento gerado!');
+
+    } catch (err) {
+        console.error('Erro ao processar faturamento:', err);
+        mostrarToast('Não consegui ler o arquivo.', 'erro');
+    }
+}
+
+function formatarMoedaBR(v) {
+    return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatarNumeroBR(v) {
+    return v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+}
+
+function linhaSetorFaturamentoHTML(s, indice, maxValor) {
+
+    const pct   = maxValor > 0 ? Math.max(3, Math.round((s.valor / maxValor) * 100)) : 0;
+    const borda = indice > 0 ? 'border-top:1px solid #EDEFF2;' : '';
+
+    return `
+    <div style="padding:16px 0;${borda}">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+            <div style="font-weight:700;font-size:15px;color:#14181C;">${indice + 1}º · ${escapeHTML(s.nome)}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:#3DCB82;white-space:nowrap;">
+                R$ ${formatarMoedaBR(s.valor)}
+            </div>
+        </div>
+        <div style="font-size:12px;color:#6B7280;margin:5px 0 10px;">
+            ${s.linhas} linhas · ${formatarNumeroBR(s.qtd)} unid.
+        </div>
+        <div style="height:6px;border-radius:3px;background:#EDEFF2;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:#3DCB82;border-radius:3px;"></div>
+        </div>
+    </div>`;
+}
+
+function montarConteudoFaturamentoHTML(d) {
+
+    const maxValor      = Math.max(...d.setores.map(s => s.valor), 1);
+    const linhasSetores = d.setores.map((s, i) => linhaSetorFaturamentoHTML(s, i, maxValor)).join('');
+
+    return `
+        <div style="background:#14181C;padding:24px 28px 18px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="font-size:26px;">💰</div>
+                <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:19px;letter-spacing:.02em;text-transform:uppercase;color:#fff;">
+                    Relatório Executivo — Faturamento
+                </div>
+            </div>
+            <div style="font-size:13px;color:#9AA5B1;margin-top:8px;">
+                ${escapeHTML(d.periodo)} · gerado em ${d.geradoEm}
+            </div>
+        </div>
+        <div style="height:4px;background:#3DCB82;"></div>
+        <div style="padding:26px 28px 8px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            ${kpiColunaHTML('Total Faturado', 'R$ ' + formatarMoedaBR(d.totalFaturado), '#3DCB82')}
+            ${kpiColunaHTML('Quantidade Total', formatarNumeroBR(d.quantidadeTotal), '#4C8FD1')}
+            ${kpiColunaHTML('Linhas Faturadas', formatarNumeroBR(d.linhasFaturadas), '#F2A93B')}
+        </div>
+        <div style="padding:20px 28px 28px;background:#FFFFFF;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280;margin-bottom:6px;">
+                Top Setores por Valor Faturado
+            </div>
+            ${linhasSetores}
+        </div>
+    `;
+}
+
+function renderFaturamentoInline(d) {
+    const container = document.getElementById('faturamentoPreview');
+    container.innerHTML = montarConteudoFaturamentoHTML(d);
+    document.getElementById('faturamentoResultadoCard').style.display = 'block';
+    document.getElementById('faturamentoResultadoCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function montarContainerFaturamentoParaImagem(d) {
+
+    const div = document.createElement('div');
+    div.id = 'faturamentoParaImagem';
+    div.style.position = 'fixed';
+    div.style.left = '-9999px';
+    div.style.top = '0';
+    div.style.width = '680px';
+    div.style.background = '#FFFFFF';
+    div.style.fontFamily = "'Inter',sans-serif";
+    div.style.color = '#14181C';
+    div.style.borderRadius = '10px';
+    div.style.overflow = 'hidden';
+    div.innerHTML = montarConteudoFaturamentoHTML(d);
+
+    document.body.appendChild(div);
+    return div;
+}
+
+async function gerarImagemFaturamento() {
+
+    if (!_dadosFaturamentoAtual) return;
+
+    if (typeof html2canvas === 'undefined') {
+        mostrarToast('Biblioteca de imagem não carregou. Verifica sua conexão.', 'erro');
+        return;
+    }
+
+    const container = montarContainerFaturamentoParaImagem(_dadosFaturamentoAtual);
+
+    try {
+
+        const canvas = await html2canvas(container, { backgroundColor: null, scale: 2 });
+        container.remove();
+
+        canvas.toBlob(async blob => {
+
+            if (!blob) {
+                mostrarToast('Não consegui gerar a imagem.', 'erro');
+                return;
+            }
+
+            const nomeArquivo = `faturamento-${_dadosFaturamentoAtual.rotulo}.png`;
+            const arquivo = new File([blob], nomeArquivo, { type: 'image/png' });
+
+            if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+                try {
+                    await navigator.share({ files: [arquivo], title: 'Relatório Executivo — Faturamento' });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            baixarBlob(blob, nomeArquivo);
+            mostrarToast('Imagem baixada — anexa ela no WhatsApp.');
+
+        }, 'image/png');
+
+    } catch (err) {
+        console.error('Erro ao gerar imagem de faturamento:', err);
+        container.remove();
+        mostrarToast('Não consegui gerar a imagem.', 'erro');
+    }
 }
 
 /* ---------- HISTÓRICO (LOCAL, POR DIA) ---------- */

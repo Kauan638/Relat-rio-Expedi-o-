@@ -248,6 +248,81 @@
         </div>
 
         <!-- ===================================== -->
+        <!-- FATURAMENTO POR SETOR -->
+        <!-- ===================================== -->
+
+        <div class="card">
+
+            <h2>💰 Faturamento por Setor</h2>
+
+            <p class="texto-explicativo">
+                Sobe o TXT de faturamento e o sistema separa o valor faturado por setor
+                automaticamente. Se quiser, filtra por uma faixa de horário antes de
+                processar — funciona até virando a madrugada (ex: 22:00 até 07:00).
+            </p>
+
+            <div id="faturamentoVazio" class="foto-area">
+                <div class="foto-icone">📄</div>
+                <p class="foto-texto">Selecione o arquivo .txt de faturamento</p>
+
+                <label class="btn-foto btn-galeria" for="inputFaturamento">
+                    📁 Escolher Arquivo
+                </label>
+                <input type="file" id="inputFaturamento" accept=".txt" class="file-hidden">
+            </div>
+
+            <div id="faturamentoArquivoBox" class="faturamento-arquivo-box" style="display:none;">
+                <span id="faturamentoNomeArquivo" class="faturamento-nome-arquivo"></span>
+                <button type="button" class="btn-retirar" onclick="retirarArquivoFaturamento()">🔄 Trocar Arquivo</button>
+            </div>
+
+            <div class="faturamento-filtro-horario">
+
+                <label class="faturamento-checkbox-label">
+                    <input type="checkbox" id="faturamentoFiltrarHorario">
+                    🕐 Filtrar por horário
+                </label>
+
+                <div id="faturamentoHorarioBox" class="manual-grid faturamento-horario-grid" style="display:none;">
+                    <div class="manual-campo">
+                        <label for="faturamentoHoraDe">De</label>
+                        <input type="time" id="faturamentoHoraDe" value="22:00">
+                    </div>
+                    <div class="manual-campo">
+                        <label for="faturamentoHoraAte">Até</label>
+                        <input type="time" id="faturamentoHoraAte" value="07:00">
+                    </div>
+                </div>
+
+                <p id="faturamentoHorarioDica" class="texto-explicativo faturamento-horario-dica" style="display:none;">
+                    💡 Se "De" for maior que "Até", o filtro entende que a faixa vira a madrugada.
+                </p>
+
+            </div>
+
+            <button type="button" class="btn-revisar" onclick="processarFaturamento()">
+                📊 Processar Faturamento
+            </button>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- RESULTADO — FATURAMENTO -->
+        <!-- ===================================== -->
+
+        <div class="card" id="faturamentoResultadoCard" style="display:none;">
+
+            <h2>Relatório Gerado</h2>
+
+            <div id="faturamentoPreview" class="faturamento-preview"></div>
+
+            <button type="button" class="btn-revisar" style="margin-top:16px;" onclick="gerarImagemFaturamento()">
+                📲 Gerar Imagem Executiva
+            </button>
+
+        </div>
+
+        <!-- ===================================== -->
         <!-- HISTÓRICO DO DIA -->
         <!-- ===================================== -->
 
