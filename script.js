@@ -23,12 +23,38 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.id === 'modalConfirmar') fecharConfirmacao();
         });
 
+    document.getElementById('modalLoja')
+        .addEventListener('click', e => {
+            if (e.target.id === 'modalLoja') fecharModalLoja();
+        });
+
+    document.getElementById('modalLojaInput')
+        .addEventListener('keydown', e => {
+            if (e.key === 'Enter') confirmarLoja();
+        });
+
+    document.getElementById('manualLojasChips')
+        .addEventListener('click', e => {
+            const btn = e.target.closest('button[data-loja]');
+            if (btn) removerLoja(btn.dataset.loja);
+        });
+
+    document.getElementById('manualRegistrosLista')
+        .addEventListener('click', e => {
+            const btn = e.target.closest('button[data-data]');
+            if (btn) excluirRegistroManual(btn.dataset.data);
+        });
+
     const ultimoCliente = localStorage.getItem('carregamento_ultimoCliente');
     if (ultimoCliente) {
         document.getElementById('campoCliente').value = ultimoCliente;
     }
 
+    document.getElementById('manualData').value = new Date().toISOString().slice(0, 10);
+
     renderHistorico();
+    renderLojasChips();
+    renderRegistrosManuais();
 });
 
 /* ---------- FOTO: CAPTURA + COMPRESSÃO ---------- */
@@ -243,6 +269,143 @@ function finalizarEnvio() {
     mostrarToast('Registro enviado ✅');
     _dadosAtual = null;
     _textoAtual = '';
+}
+
+/* ---------- LANÇAMENTO MANUAL DO DIA ---------- */
+
+let lojasFaturadas = [];
+
+function abrirModalLoja() {
+    document.getElementById('modalLojaInput').value = '';
+    document.getElementById('modalLoja').style.display = 'flex';
+    setTimeout(() => document.getElementById('modalLojaInput').focus(), 100);
+}
+
+function fecharModalLoja() {
+    document.getElementById('modalLoja').style.display = 'none';
+}
+
+function confirmarLoja() {
+
+    const valor = document.getElementById('modalLojaInput').value.trim();
+
+    if (!valor) {
+        mostrarToast('Digite o número da loja.', 'erro');
+        return;
+    }
+
+    if (lojasFaturadas.includes(valor)) {
+        mostrarToast('Essa loja já foi adicionada.', 'erro');
+        fecharModalLoja();
+        return;
+    }
+
+    lojasFaturadas.push(valor);
+    renderLojasChips();
+    fecharModalLoja();
+}
+
+function removerLoja(valor) {
+    lojasFaturadas = lojasFaturadas.filter(l => l !== valor);
+    renderLojasChips();
+}
+
+function renderLojasChips() {
+
+    const contador = document.getElementById('manualLojasContador');
+    const container = document.getElementById('manualLojasChips');
+
+    contador.textContent = lojasFaturadas.length;
+
+    if (lojasFaturadas.length === 0) {
+        container.innerHTML = '<span class="manual-lojas-vazio">Nenhuma loja adicionada ainda.</span>';
+        return;
+    }
+
+    container.innerHTML = lojasFaturadas.map(l =>
+        `<span class="chip-loja">${escapeHTML(l)}<button type="button" data-loja="${escapeHTML(l)}">×</button></span>`
+    ).join('');
+}
+
+function salvarRegistroManual() {
+
+    const data = document.getElementById('manualData').value;
+
+    if (!data) {
+        mostrarToast('Selecione a data.', 'erro');
+        return;
+    }
+
+    const registro = {
+        data,
+        caminhoes: Number(document.getElementById('manualCaminhoes').value) || 0,
+        docas: Number(document.getElementById('manualDocas').value) || 0,
+        veiculosA: Number(document.getElementById('manualVeiculosTurnoA').value) || 0,
+        foraEscala: Number(document.getElementById('manualForaEscala').value) || 0,
+        lojas: [...lojasFaturadas]
+    };
+
+    const registros = obterRegistrosManuais();
+    const idx = registros.findIndex(r => r.data === data);
+
+    if (idx >= 0) registros[idx] = registro;
+    else registros.push(registro);
+
+    registros.sort((a, b) => (a.data < b.data ? 1 : -1));
+
+    localStorage.setItem('carregamento_registrosManuais', JSON.stringify(registros));
+
+    mostrarToast('Registro do dia salvo ✅');
+    renderRegistrosManuais();
+}
+
+function limparFormularioManual() {
+    document.getElementById('manualCaminhoes').value = '';
+    document.getElementById('manualDocas').value = '';
+    document.getElementById('manualVeiculosTurnoA').value = '';
+    document.getElementById('manualForaEscala').value = '';
+    lojasFaturadas = [];
+    renderLojasChips();
+}
+
+function obterRegistrosManuais() {
+    return JSON.parse(localStorage.getItem('carregamento_registrosManuais') || '[]');
+}
+
+function excluirRegistroManual(data) {
+    if (!confirm(`Excluir o registro de ${formatarDataBR(data)}?`)) return;
+    const registros = obterRegistrosManuais().filter(r => r.data !== data);
+    localStorage.setItem('carregamento_registrosManuais', JSON.stringify(registros));
+    renderRegistrosManuais();
+}
+
+function formatarDataBR(iso) {
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+function renderRegistrosManuais() {
+
+    const registros = obterRegistrosManuais();
+    const vazio = document.getElementById('manualRegistrosVazio');
+    const container = document.getElementById('manualRegistrosLista');
+
+    if (registros.length === 0) {
+        vazio.style.display = 'block';
+        container.innerHTML = '';
+        return;
+    }
+
+    vazio.style.display = 'none';
+
+    container.innerHTML = registros.map(r => {
+        const texto = `${formatarDataBR(r.data)} · 🚛 ${r.caminhoes} caminhões · 🚪 ${r.docas} docas · `
+            + `✅ ${r.veiculosA} turno A · 📦 ${r.foraEscala} fora escala · 🏪 ${r.lojas.length} lojas`;
+        return `<div class="historico-item">
+            <div class="historico-item-texto">${escapeHTML(texto)}</div>
+            <button type="button" class="btn-excluir-registro" data-data="${escapeHTML(r.data)}">✕</button>
+        </div>`;
+    }).join('');
 }
 
 /* ---------- HISTÓRICO (LOCAL, POR DIA) ---------- */
