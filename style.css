@@ -582,11 +582,154 @@ RESPONSIVO
 
 @media(max-width:768px){
 
-    .acoes{
+    body{
+        padding:14px;
+    }
 
+    .card{
+        padding:16px;
+        margin-bottom:16px;
+        border-radius:var(--radius-sm);
+    }
+
+    h1{
+        font-size:1.3rem;
+        letter-spacing:.02em;
+        padding-bottom:10px;
+    }
+
+    h1::after{
+        width:140px;
+        height:4px;
+        margin:10px auto 16px;
+    }
+
+    .subtitulo{
+        font-size:.78rem;
+        margin-top:-8px;
+        margin-bottom:18px;
+        padding:0 8px;
+    }
+
+    .card h2{
+        font-size:1rem;
+        margin-bottom:14px;
+    }
+
+    /* uploads: uma coluna, caixas mais enxutas */
+    .upload-area{
+        grid-template-columns:1fr;
+        gap:14px;
+    }
+
+    .upload-box{
+        padding:16px;
+    }
+
+    .upload-btn{
+        display:block;
+        width:100%;
+        padding:12px 16px;
+    }
+
+    /* botões de ação empilhados e ocupando a largura toda */
+    .acoes{
         flex-direction:column;
     }
 
+    .acoes button{
+        width:100%;
+    }
+
+    button{
+        padding:13px 18px;
+        font-size:.8rem;
+    }
+
+    /* sincronização automática: empilha info + ações */
+    .sync-card{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .sync-card-acoes{
+        width:100%;
+    }
+
+    .sync-card-acoes button{
+        flex:1;
+    }
+
+    /* KPIs: uma coluna, cards mais compactos */
+    .kpis{
+        grid-template-columns:1fr;
+        gap:12px;
+        margin-bottom:18px;
+    }
+
+    .kpi-card{
+        padding:16px 18px;
+    }
+
+    .kpi-card span{
+        font-size:1.5rem;
+    }
+
+    /* gráfico: menor altura pra caber na tela */
+    .grafico-container{
+        height:240px;
+    }
+
+    /* tabelas: fonte menor e indicativo de rolagem lateral */
+    .tabela-container{
+        margin-top:14px;
+        -webkit-overflow-scrolling:touch;
+    }
+
+    table{
+        min-width:640px;
+    }
+
+    th,td{
+        padding:9px 10px;
+        font-size:.78rem;
+    }
+
+    /* lançamento manual: uma coluna */
+    .manual-grid{
+        grid-template-columns:1fr;
+        gap:12px;
+    }
+
+    .manual-lojas-cabecalho{
+        align-items:flex-start;
+    }
+
+    .btn-add-loja{
+        width:100%;
+    }
+
+    /* modal ocupa quase a largura toda com folga nas bordas */
+    .modal-caixa{
+        padding:20px;
+    }
+
+    .subsecao-titulo{
+        font-size:.92rem;
+        margin:20px 0 12px;
+        padding-top:16px;
+    }
+}
+
+@media(max-width:400px){
+
+    h1{
+        font-size:1.1rem;
+    }
+
+    .kpi-card span{
+        font-size:1.3rem;
+    }
 }
 
 /* =====================================
