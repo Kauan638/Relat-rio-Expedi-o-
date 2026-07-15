@@ -182,11 +182,11 @@ function construirMensagem(d) {
     }[d.status] || '📋';
 
     const linhas = [
-        `Doca: ${d.doca}`,
-        `Loja: ${d.loja}`,
-        `Paletes: ${d.paletes}`,
-        `Tipo de veículo: ${d.cliente}`,
-        `Status: ${emojiStatus} ${d.status}`
+        `Doca: *${d.doca}*`,
+        `Loja: *${d.loja}*`,
+        `Paletes: *${d.paletes}*`,
+        `Tipo de veículo: *${d.cliente}*`,
+        `Status: ${emojiStatus} *${d.status}*`
     ];
     if (d.obs) linhas.push(`Observação: ${d.obs}`);
     return linhas.join('\n');
