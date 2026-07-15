@@ -818,3 +818,277 @@ SINCRONIZAÇÃO AUTOMÁTICA
     font-family:var(--font-mono);
 
 }
+
+/* =========================================================
+LANÇAMENTO MANUAL DO DIA
+========================================================= */
+
+.texto-explicativo{
+    font-size:.85rem;
+    color:var(--text-muted);
+    margin-bottom:18px;
+    line-height:1.5;
+    max-width:820px;
+}
+
+.manual-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:16px;
+}
+
+.manual-campo{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.manual-campo label{
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+}
+
+.manual-campo input{
+    padding:10px 12px;
+    border-radius:var(--radius-sm);
+    background:var(--surface-alt);
+    border:1px solid var(--border-light);
+    color:var(--text);
+    font-family:var(--font-mono);
+    font-size:.9rem;
+}
+
+.manual-campo input:focus{
+    outline:none;
+    border-color:var(--amber);
+}
+
+/* ---------- LOJAS FATURADAS ---------- */
+
+.manual-lojas{
+    margin-top:22px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+}
+
+.manual-lojas-cabecalho{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:14px;
+}
+
+.manual-lojas-cabecalho label{
+    font-size:.85rem;
+    font-weight:700;
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.manual-lojas-contador{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:26px;
+    height:26px;
+    padding:0 8px;
+    border-radius:20px;
+    background:var(--amber);
+    color:#241A05;
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    font-weight:700;
+}
+
+.btn-add-loja{
+    padding:10px 18px;
+    border:none;
+    border-radius:var(--radius-sm);
+    background:var(--green);
+    color:#0B1F16;
+    font-weight:700;
+    font-size:.8rem;
+    letter-spacing:.03em;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.btn-add-loja:hover{
+    transform:translateY(-2px);
+    filter:brightness(1.08);
+}
+
+.manual-lojas-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    min-height:40px;
+}
+
+.manual-lojas-vazio{
+    font-size:.82rem;
+    color:var(--text-muted);
+    font-style:italic;
+}
+
+.chip-loja{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 8px 7px 14px;
+    border-radius:20px;
+    background:var(--surface-alt);
+    border:1px solid var(--border-light);
+    font-family:var(--font-mono);
+    font-size:.82rem;
+    color:var(--text);
+}
+
+.chip-loja button{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:20px;
+    height:20px;
+    border:none;
+    border-radius:50%;
+    background:var(--red-dim);
+    color:var(--red);
+    font-size:1rem;
+    line-height:1;
+    cursor:pointer;
+    transition:.15s;
+}
+
+.chip-loja button:hover{
+    background:var(--red);
+    color:#fff;
+}
+
+/* =========================================================
+MODAL — CONFIRMAR LOJA FATURADA
+========================================================= */
+
+.modal-overlay{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    background:rgba(10,12,15,.72);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+
+.modal-caixa{
+    width:100%;
+    max-width:380px;
+    background:var(--surface);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius);
+    padding:26px;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+
+.modal-caixa h3{
+    font-family:var(--font-display);
+    font-size:1.1rem;
+    margin-bottom:8px;
+    color:var(--text);
+}
+
+.modal-caixa p{
+    font-size:.85rem;
+    color:var(--text-muted);
+    margin-bottom:16px;
+    line-height:1.5;
+}
+
+.modal-caixa input{
+    width:100%;
+    padding:12px 14px;
+    border-radius:var(--radius-sm);
+    background:var(--surface-alt);
+    border:1px solid var(--border-light);
+    color:var(--text);
+    font-family:var(--font-mono);
+    font-size:1rem;
+    margin-bottom:20px;
+}
+
+.modal-caixa input:focus{
+    outline:none;
+    border-color:var(--amber);
+}
+
+.modal-acoes{
+    display:flex;
+    gap:12px;
+    justify-content:flex-end;
+}
+
+.modal-acoes button{
+    padding:10px 20px;
+    border:none;
+    border-radius:var(--radius-sm);
+    font-weight:700;
+    font-size:.82rem;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.btn-modal-cancelar{
+    background:transparent;
+    border:1px solid var(--border-light) !important;
+    color:var(--text-muted);
+}
+
+.btn-modal-cancelar:hover{
+    border-color:var(--text-muted) !important;
+    color:var(--text);
+}
+
+.btn-modal-confirmar{
+    background:var(--green);
+    color:#0B1F16;
+}
+
+.btn-modal-confirmar:hover{
+    filter:brightness(1.08);
+}
+
+/* =========================================================
+SUBSEÇÃO — FATURAMENTO POR PRODUTIVO
+========================================================= */
+
+.subsecao-titulo{
+    margin:28px 0 16px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    font-family:var(--font-display);
+    font-size:1.05rem;
+    font-weight:600;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.subsecao-nota{
+    font-family:var(--font-body);
+    font-size:.72rem;
+    font-weight:400;
+    text-transform:none;
+    letter-spacing:0;
+    color:var(--text-muted);
+}

@@ -204,6 +204,140 @@
         </div>
 
         <!-- ===================================== -->
+        <!-- LANÇAMENTO MANUAL -->
+        <!-- ===================================== -->
+
+        <div class="card">
+
+            <h2>
+                ✍️ Lançamento Manual do Dia
+            </h2>
+
+            <p class="texto-explicativo">
+                Preenche direto aqui quando não tiver o arquivo Base à mão. Salvar substitui
+                o registro do dia selecionado (se já existir um vindo do Excel ou de um
+                lançamento manual anterior).
+            </p>
+
+            <div class="manual-grid">
+
+                <div class="manual-campo">
+                    <label for="manualData">📅 Data</label>
+                    <input type="date" id="manualData">
+                </div>
+
+                <div class="manual-campo">
+                    <label for="manualCaminhoes">🚛 Caminhões carregados</label>
+                    <input type="number" id="manualCaminhoes" min="0" placeholder="0">
+                </div>
+
+                <div class="manual-campo">
+                    <label for="manualDocas">🚪 Docas produzidas</label>
+                    <input type="number" id="manualDocas" min="0" placeholder="0">
+                </div>
+
+                <div class="manual-campo">
+                    <label for="manualVeiculosTurnoA">✅ Veículos completados Turno A</label>
+                    <input type="number" id="manualVeiculosTurnoA" min="0" placeholder="0">
+                </div>
+
+                <div class="manual-campo">
+                    <label for="manualForaEscala">📦 Cargas fora da escala</label>
+                    <input type="number" id="manualForaEscala" min="0" placeholder="0">
+                </div>
+
+            </div>
+
+            <!-- LOJAS FATURADAS — lista de chips + botão de adicionar -->
+
+            <div class="manual-lojas">
+
+                <div class="manual-lojas-cabecalho">
+
+                    <label>
+                        🏪 Lojas Faturadas
+                        <span id="manualLojasContador" class="manual-lojas-contador">0</span>
+                    </label>
+
+                    <button
+                        type="button"
+                        class="btn-add-loja"
+                        onclick="abrirModalLoja()">
+
+                        ➕ Adicionar Loja
+
+                    </button>
+
+                </div>
+
+                <div id="manualLojasChips" class="manual-lojas-chips">
+
+                    <span class="manual-lojas-vazio">
+                        Nenhuma loja adicionada ainda.
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="acoes" style="margin-top:20px;">
+
+                <button
+                    class="btn-processar"
+                    onclick="salvarRegistroManual()">
+
+                    💾 Salvar Registro do Dia
+
+                </button>
+
+                <button
+                    class="btn-exportar"
+                    onclick="limparFormularioManual()">
+
+                    🧹 Limpar Formulário
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- MODAL — CONFIRMAR LOJA FATURADA -->
+        <!-- ===================================== -->
+
+        <div id="modalLoja" class="modal-overlay" style="display:none;">
+
+            <div class="modal-caixa">
+
+                <h3>🏪 Confirmar Loja Faturada</h3>
+
+                <p>Digite o número da loja que acabou de ser faturada.</p>
+
+                <input
+                    type="text"
+                    id="modalLojaInput"
+                    placeholder="ex: 107"
+                    autocomplete="off"
+                    onkeydown="if(event.key==='Enter') confirmarLoja()">
+
+                <div class="modal-acoes">
+
+                    <button class="btn-modal-cancelar" onclick="fecharModalLoja()">
+                        Cancelar
+                    </button>
+
+                    <button class="btn-modal-confirmar" onclick="confirmarLoja()">
+                        ✅ Confirmar
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ===================================== -->
         <!-- KPIs -->
         <!-- ===================================== -->
 
@@ -417,6 +551,56 @@
                         </thead>
 
                         <tbody id="tbodyFaturamentoSetor">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <!-- ===================================== -->
+                <!-- FATURAMENTO POR PRODUTIVO -->
+                <!-- ===================================== -->
+
+                <div class="subsecao-titulo">
+                    👷 Faturamento por Produtivo
+                    <span class="subsecao-nota">
+                        Filtrado pelo turno 17h–02h30 · matrícula extraída da tarefa (STOK)
+                    </span>
+                </div>
+
+                <div class="kpis" style="margin-bottom:16px;">
+
+                    <div class="kpi-card">
+                        <h3>Valor no Turno B</h3>
+                        <span id="kpiValorTurnoB">R$ 0</span>
+                    </div>
+
+                    <div class="kpi-card">
+                        <h3>Linhas no Turno B</h3>
+                        <span id="kpiLinhasTurnoB">0</span>
+                    </div>
+
+                    <div class="kpi-card">
+                        <h3>Produtivos Ativos</h3>
+                        <span id="kpiProdutivosAtivos">0</span>
+                    </div>
+
+                </div>
+
+                <div class="tabela-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Matrícula</th>
+                                <th>Linhas</th>
+                                <th>Quantidade</th>
+                                <th>Valor Faturado</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="tbodyFaturamentoProdutivo">
                         </tbody>
 
                     </table>

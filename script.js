@@ -5,6 +5,7 @@
 let dadosBase = [];
 let dadosFaturamento = [];
 let grafico = null;
+let lojasFaturadasHoje = [];
 
 // =====================================
 // NOME DO ARQUIVO SELECIONADO
@@ -1756,3 +1757,388 @@ tfoot td{
     },500);
 
 }
+
+// =====================================================
+// =====================================================
+// LANÇAMENTO MANUAL DO DIA
+// Preenche os 5 campos direto na tela, sem precisar do
+// Excel da Base. Ao salvar, gera um item com o MESMO
+// formato de dadosBase (produzido por processarArquivoBase)
+// e faz upsert por data — reaproveita 100% dos KPIs,
+// gráfico e tabela já existentes, sem duplicar lógica.
+// =====================================================
+// =====================================================
+
+// ---------- MODAL DE LOJA FATURADA ----------
+
+function abrirModalLoja(){
+
+    document.getElementById("modalLoja").style.display = "flex";
+
+    const campo = document.getElementById("modalLojaInput");
+
+    campo.value = "";
+
+    setTimeout(() => campo.focus(), 50);
+
+}
+
+function fecharModalLoja(){
+
+    document.getElementById("modalLoja").style.display = "none";
+
+}
+
+function confirmarLoja(){
+
+    const campo =
+    document.getElementById("modalLojaInput");
+
+    const numero =
+    campo.value.trim();
+
+    if(!numero){
+
+        alert("Digita o número da loja.");
+
+        return;
+
+    }
+
+    if(lojasFaturadasHoje.includes(numero)){
+
+        alert(`A loja ${numero} já está na lista.`);
+
+        return;
+
+    }
+
+    lojasFaturadasHoje.push(numero);
+
+    atualizarChipsLojas();
+
+    fecharModalLoja();
+
+}
+
+function removerLoja(numero){
+
+    lojasFaturadasHoje =
+    lojasFaturadasHoje.filter(l => l !== numero);
+
+    atualizarChipsLojas();
+
+}
+
+function atualizarChipsLojas(){
+
+    const container =
+    document.getElementById("manualLojasChips");
+
+    document.getElementById("manualLojasContador").innerText =
+    lojasFaturadasHoje.length;
+
+    if(!lojasFaturadasHoje.length){
+
+        container.innerHTML = `
+        <span class="manual-lojas-vazio">
+            Nenhuma loja adicionada ainda.
+        </span>
+        `;
+
+        return;
+
+    }
+
+    container.innerHTML =
+    lojasFaturadasHoje
+    .map(numero => `
+        <span class="chip-loja">
+            🏪 ${numero}
+            <button type="button" onclick="removerLoja('${numero}')" title="Remover">×</button>
+        </span>
+    `)
+    .join("");
+
+}
+
+// fecha o modal clicando fora da caixa
+document
+.getElementById("modalLoja")
+.addEventListener("click", function(evento){
+
+    if(evento.target === this){
+
+        fecharModalLoja();
+
+    }
+
+});
+
+// ---------- SALVAR / LIMPAR ----------
+
+function obterDataManualComoDate(){
+
+    const valor =
+    document.getElementById("manualData").value;
+
+    if(!valor) return null;
+
+    const partes =
+    valor.split("-");
+
+    return new Date(
+        Number(partes[0]),
+        Number(partes[1]) - 1,
+        Number(partes[2])
+    );
+
+}
+
+function mesmoDia(a, b){
+
+    return (
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate()
+    );
+
+}
+
+function salvarRegistroManual(){
+
+    const data =
+    obterDataManualComoDate();
+
+    if(!data){
+
+        alert("Selecione a data do registro.");
+
+        return;
+
+    }
+
+    const registro = {
+
+        data,
+
+        caminhoes:
+        Number(document.getElementById("manualCaminhoes").value) || 0,
+
+        docas:
+        Number(document.getElementById("manualDocas").value) || 0,
+
+        lojas:
+        lojasFaturadasHoje.length,
+
+        veiculosTurnoA:
+        Number(document.getElementById("manualVeiculosTurnoA").value) || 0,
+
+        foraEscala:
+        Number(document.getElementById("manualForaEscala").value) || 0
+
+    };
+
+    const indiceExistente =
+    dadosBase.findIndex(item => item.data && mesmoDia(item.data, data));
+
+    if(indiceExistente >= 0){
+
+        const confirmaSubstituir =
+        confirm(
+            `Já existe um registro para ${data.toLocaleDateString("pt-BR")}. Substituir pelos valores preenchidos agora?`
+        );
+
+        if(!confirmaSubstituir) return;
+
+        dadosBase[indiceExistente] = registro;
+
+    }else{
+
+        dadosBase.push(registro);
+
+    }
+
+    dadosBase.sort((a,b) => a.data - b.data);
+
+    atualizarKPIs();
+    renderizarGrafico();
+    renderizarTabela();
+
+    alert(
+        `Registro de ${data.toLocaleDateString("pt-BR")} salvo com sucesso.`
+    );
+
+}
+
+function limparFormularioManual(){
+
+    document.getElementById("manualData").value = "";
+    document.getElementById("manualCaminhoes").value = "";
+    document.getElementById("manualDocas").value = "";
+    document.getElementById("manualVeiculosTurnoA").value = "";
+    document.getElementById("manualForaEscala").value = "";
+
+    lojasFaturadasHoje = [];
+
+    atualizarChipsLojas();
+
+}
+
+// preenche a data com hoje por padrão ao carregar a página
+document.addEventListener("DOMContentLoaded", function(){
+
+    const campoData =
+    document.getElementById("manualData");
+
+    if(campoData && !campoData.value){
+
+        const hoje = new Date();
+
+        campoData.value =
+        hoje.getFullYear() + "-" +
+        String(hoje.getMonth()+1).padStart(2,"0") + "-" +
+        String(hoje.getDate()).padStart(2,"0");
+
+    }
+
+});
+
+// =====================================================
+// =====================================================
+// FATURAMENTO POR PRODUTIVO — TURNO B (17h–02h30)
+// Reaproveita dadosFaturamento (já lido por
+// lerFaturamentoTXT) e o campo "operador" que já é
+// extraído da tarefa (padrão STOK <matrícula>), mas
+// que até então não era exibido em lugar nenhum.
+// =====================================================
+// =====================================================
+
+// true se o horário do registro cai dentro da janela
+// 17:00 até 02:30 do dia seguinte (turno que atravessa
+// a meia-noite)
+function estaNoTurnoB(dataHora){
+
+    if(!dataHora) return false;
+
+    const minutosDoDia =
+    dataHora.getHours() * 60 + dataHora.getMinutes();
+
+    const inicio = 17 * 60;       // 17:00
+    const fim = 2 * 60 + 30;      // 02:30
+
+    return (
+        minutosDoDia >= inicio ||
+        minutosDoDia <= fim
+    );
+
+}
+
+function obterResumoProdutivo(){
+
+    const doTurnoB =
+    dadosFaturamento.filter(item => estaNoTurnoB(item.dataHora));
+
+    const porProdutivo = {};
+
+    let totalValor = 0;
+    let totalLinhas = 0;
+
+    doTurnoB.forEach(item=>{
+
+        const matricula =
+        item.operador || "SEM MATRÍCULA";
+
+        if(!porProdutivo[matricula]){
+
+            porProdutivo[matricula] = {
+
+                matricula,
+                linhas: 0,
+                quantidade: 0,
+                valor: 0
+
+            };
+
+        }
+
+        porProdutivo[matricula].linhas++;
+        porProdutivo[matricula].quantidade += item.quantidade;
+        porProdutivo[matricula].valor += item.valor;
+
+        totalValor += item.valor;
+        totalLinhas++;
+
+    });
+
+    const produtivos =
+    Object.values(porProdutivo)
+    .sort((a,b) => b.valor - a.valor);
+
+    return { totalValor, totalLinhas, produtivos };
+
+}
+
+function atualizarFaturamentoProdutivo(){
+
+    const resumo =
+    obterResumoProdutivo();
+
+    const formatarMoeda =
+    valor =>
+    valor.toLocaleString("pt-BR",{ style:"currency", currency:"BRL" });
+
+    document.getElementById("kpiValorTurnoB").innerText =
+    formatarMoeda(resumo.totalValor);
+
+    document.getElementById("kpiLinhasTurnoB").innerText =
+    resumo.totalLinhas.toLocaleString("pt-BR");
+
+    document.getElementById("kpiProdutivosAtivos").innerText =
+    resumo.produtivos.length.toLocaleString("pt-BR");
+
+    const tbody =
+    document.getElementById("tbodyFaturamentoProdutivo");
+
+    if(!resumo.produtivos.length){
+
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">
+                Nenhum lançamento dentro do turno 17h–02h30 nesse arquivo.
+            </td>
+        </tr>
+        `;
+
+        return;
+
+    }
+
+    tbody.innerHTML =
+    resumo.produtivos.map(item => `
+        <tr>
+            <td>${item.matricula}</td>
+            <td>${item.linhas.toLocaleString("pt-BR")}</td>
+            <td>${item.quantidade.toLocaleString("pt-BR")}</td>
+            <td>${formatarMoeda(item.valor)}</td>
+        </tr>
+    `).join("");
+
+}
+
+// encaixa a chamada dentro do fluxo já existente de
+// atualizarFaturamento(), sem duplicar o guard de
+// "sem dados ainda" que a função original já faz
+const atualizarFaturamentoOriginal = atualizarFaturamento;
+
+atualizarFaturamento = function(){
+
+    atualizarFaturamentoOriginal();
+
+    if(dadosFaturamento.length){
+
+        atualizarFaturamentoProdutivo();
+
+    }
+
+};
