@@ -160,8 +160,10 @@ function construirMensagem(d) {
     }[d.status] || '📋';
 
     const linhas = [
-        `📦 *Doca ${d.doca}* • Loja *${d.loja}*`,
-        `${d.paletes} plts — ${d.cliente}`,
+        `📦 *Doca ${d.doca}*`,
+        `🏬 *Loja ${d.loja}*`,
+        `${d.paletes} plts`,
+        d.cliente,
         `${emojiStatus} *${d.status}*`
     ];
     if (d.obs) linhas.push(`_${d.obs}_`);
