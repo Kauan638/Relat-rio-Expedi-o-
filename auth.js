@@ -31,6 +31,17 @@ firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 
+// Não guarda a sessão em lugar nenhum (nem localStorage, nem
+// sessionStorage) — isso força a tela de login toda vez que a
+// página é recarregada (F5) ou reaberta, mesmo sem ter
+// "deslogado" explicitamente com o botão Sair.
+auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
+.catch(erro=>{
+
+    console.error("Erro ao configurar persistência do login:", erro);
+
+});
+
 // ---------- LOGIN ----------
 
 function matriculaParaEmail(matricula){
