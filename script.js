@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('campoCliente').value = ultimoCliente;
     }
 
-    document.getElementById('manualData').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('manualData').value = hojeISO();
 
     renderHistorico();
     renderLojasChips();
@@ -172,6 +172,18 @@ function coletarDados() {
     };
 }
 
+function hojeISO() {
+    const data = new Date();
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+function eNumeroInteiroNaoNegativo(valor) {
+    return /^\d+$/.test(valor);
+}
+
 function construirMensagem(d) {
 
     const emojiStatus = {
@@ -216,8 +228,18 @@ function abrirConfirmacao() {
 
     const dados = coletarDados();
 
-    if (!dados.doca || !dados.loja || !dados.paletes || !dados.cliente) {
+    if (!dados.doca || !dados.loja || dados.paletes === '' || !dados.cliente) {
         mostrarToast('Preenche Doca, Loja, Paletes e Tipo de Veículo.', 'erro');
+        return;
+    }
+
+    if (!eNumeroInteiroNaoNegativo(dados.doca) || !eNumeroInteiroNaoNegativo(dados.loja)) {
+        mostrarToast('Doca e Loja devem conter somente números.', 'erro');
+        return;
+    }
+
+    if (!eNumeroInteiroNaoNegativo(dados.paletes)) {
+        mostrarToast('A quantidade de paletes deve ser um número inteiro igual ou maior que zero.', 'erro');
         return;
     }
 
@@ -320,8 +342,8 @@ function confirmarLoja() {
 
     const valor = document.getElementById('modalLojaInput').value.trim();
 
-    if (!valor) {
-        mostrarToast('Digite o número da loja.', 'erro');
+    if (!eNumeroInteiroNaoNegativo(valor)) {
+        mostrarToast('Digite um número de loja válido.', 'erro');
         return;
     }
 
@@ -364,6 +386,18 @@ function salvarRegistroManual() {
 
     if (!data) {
         mostrarToast('Selecione a data.', 'erro');
+        return;
+    }
+
+    const valores = [
+        document.getElementById('manualCaminhoes').value.trim(),
+        document.getElementById('manualDocas').value.trim(),
+        document.getElementById('manualVeiculosTurnoA').value.trim(),
+        document.getElementById('manualForaEscala').value.trim()
+    ];
+
+    if (valores.some(valor => valor !== '' && !eNumeroInteiroNaoNegativo(valor))) {
+        mostrarToast('Os campos numéricos devem ser inteiros iguais ou maiores que zero.', 'erro');
         return;
     }
 
@@ -852,9 +886,26 @@ function lerArquivoComoTextoISO88591(file) {
 }
 
 function parseNumeroBR(str) {
-    if (!str) return 0;
-    const n = parseFloat(str.trim().replace(',', '.'));
-    return isNaN(n) ? 0 : n;
+    if (str === null || str === undefined || String(str).trim() === '') return 0;
+
+    let valor = String(str)
+        .trim()
+        .replace(/^R\$\s*/i, '')
+        .replace(/\s/g, '');
+
+    const negativo = /^\(.*\)$/.test(valor);
+    if (negativo) valor = valor.slice(1, -1);
+
+    // Formato brasileiro: 1.234,56. Quando não há vírgula, mantém
+    // o ponto decimal se ele existir (ex.: 1234.56).
+    if (valor.includes(',')) {
+        valor = valor.replace(/\./g, '').replace(',', '.');
+    } else if (/^-?\d{1,3}(\.\d{3})+$/.test(valor)) {
+        valor = valor.replace(/\./g, '');
+    }
+
+    const numero = Number(valor);
+    return Number.isFinite(numero) ? (negativo ? -numero : numero) : 0;
 }
 
 function extrairHoraDeDataHora(str) {
