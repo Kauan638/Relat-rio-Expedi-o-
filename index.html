@@ -279,6 +279,26 @@
             <div class="faturamento-filtro-horario">
 
                 <label class="faturamento-checkbox-label">
+                    <input type="checkbox" id="faturamentoFiltrarData">
+                    📅 Filtrar por data
+                </label>
+
+                <div id="faturamentoDataBox" class="manual-grid faturamento-horario-grid" style="display:none;">
+                    <div class="manual-campo">
+                        <label for="faturamentoDataDe">De</label>
+                        <input type="date" id="faturamentoDataDe">
+                    </div>
+                    <div class="manual-campo">
+                        <label for="faturamentoDataAte">Até</label>
+                        <input type="date" id="faturamentoDataAte">
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="faturamento-filtro-horario">
+
+                <label class="faturamento-checkbox-label">
                     <input type="checkbox" id="faturamentoFiltrarHorario">
                     🕐 Filtrar por horário
                 </label>

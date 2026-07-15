@@ -48,6 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inputFaturamento')
         .addEventListener('change', e => handleArquivoFaturamento(e.target.files[0]));
 
+    document.getElementById('faturamentoFiltrarData')
+        .addEventListener('change', e => {
+            document.getElementById('faturamentoDataBox').style.display = e.target.checked ? 'grid' : 'none';
+        });
+
     document.getElementById('faturamentoFiltrarHorario')
         .addEventListener('change', e => {
             const mostrar = e.target.checked;
@@ -734,6 +739,15 @@ function extrairHoraDeDataHora(str) {
     return partes.length > 1 ? partes[1].slice(0, 5) : null; // "HH:MM"
 }
 
+function extrairDataDeDataHora(str) {
+    if (!str) return null;
+    const partes = str.trim().split(' ');
+    if (partes.length < 1) return null;
+    const [dd, mm, yyyy] = partes[0].split('/');
+    if (!dd || !mm || !yyyy) return null;
+    return `${yyyy}-${mm}-${dd}`; // "yyyy-mm-dd", comparável com <input type="date">
+}
+
 function parseFaturamentoTXT(texto) {
 
     const linhas = texto.split(/\r\n|\n|\r/).filter(l => l.trim() !== '');
@@ -761,10 +775,11 @@ function parseFaturamentoTXT(texto) {
 
         const setor = campos[iSetor].trim() || 'SEM SETOR';
         const hora  = extrairHoraDeDataHora(campos[iDataHora]);
+        const data  = extrairDataDeDataHora(campos[iDataHora]);
         const valor = parseNumeroBR(campos[iValor]);
         const qtd   = iQtdVolumes > -1 ? parseNumeroBR(campos[iQtdVolumes]) : 0;
 
-        registros.push({ setor, hora, valor, qtd });
+        registros.push({ setor, hora, data, valor, qtd });
     }
 
     return { registros };
@@ -820,9 +835,31 @@ async function processarFaturamento() {
             return;
         }
 
-        const filtrarHorario = document.getElementById('faturamentoFiltrarHorario').checked;
+        const filtrarData     = document.getElementById('faturamentoFiltrarData').checked;
+        const filtrarHorario  = document.getElementById('faturamentoFiltrarHorario').checked;
+
         let registrosFiltrados = registros;
+        let dataTexto = null;
         let horarioTexto = null;
+
+        if (filtrarData) {
+
+            const de  = document.getElementById('faturamentoDataDe').value;
+            const ate = document.getElementById('faturamentoDataAte').value;
+
+            if (!de || !ate) {
+                mostrarToast('Preenche a data De e Até.', 'erro');
+                return;
+            }
+
+            registrosFiltrados = registrosFiltrados.filter(r => r.data && r.data >= de && r.data <= ate);
+            dataTexto = de === ate ? formatarDataBR(de) : `${formatarDataBR(de)} a ${formatarDataBR(ate)}`;
+
+            if (registrosFiltrados.length === 0) {
+                mostrarToast('Nenhum lançamento nesse período de data.', 'erro');
+                return;
+            }
+        }
 
         if (filtrarHorario) {
 
@@ -834,7 +871,7 @@ async function processarFaturamento() {
                 return;
             }
 
-            registrosFiltrados = registros.filter(r => horaDentroDoIntervalo(r.hora, de, ate));
+            registrosFiltrados = registrosFiltrados.filter(r => horaDentroDoIntervalo(r.hora, de, ate));
             horarioTexto = `${de} às ${ate}`;
 
             if (registrosFiltrados.length === 0) {
@@ -852,14 +889,18 @@ async function processarFaturamento() {
         const geradoEm = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()}, `
             + `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
 
+        const partesPeriodo = [];
+        if (dataTexto) partesPeriodo.push(dataTexto);
+        if (horarioTexto) partesPeriodo.push(`das ${horarioTexto}`);
+
         _dadosFaturamentoAtual = {
-            periodo: horarioTexto ? `Faturamento das ${horarioTexto}` : 'Faturamento completo do arquivo',
+            periodo: partesPeriodo.length > 0 ? partesPeriodo.join(' · ') : 'Faturamento completo do arquivo',
             geradoEm,
             totalFaturado,
             quantidadeTotal,
             linhasFaturadas,
             setores,
-            rotulo: (horarioTexto || 'completo').replace(/[: ]/g, '-')
+            rotulo: (partesPeriodo.join('_') || 'completo').replace(/[: ]/g, '-')
         };
 
         renderFaturamentoInline(_dadosFaturamentoAtual);
