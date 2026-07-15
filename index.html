@@ -1,162 +1,543 @@
-// ========================================================
-// ========================================================
-// AUTENTICAÇÃO — Login por matrícula/senha
-//
-// Usa o Firebase Authentication (e-mail/senha). Como o
-// Firebase só entende "e-mail", cada matrícula é convertida
-// pra um endereço fake no formato <matricula>@expedicao.local
-// só pra servir de identificador único — ninguém recebe
-// e-mail de verdade, nem precisa existir esse domínio.
-//
-// COMO CADASTRAR GENTE PRA LOGAR:
-// Firebase Console → Authentication → Users → Add user
-// E-mail: <matricula>@expedicao.local   (ex: 12345@expedicao.local)
-// Senha: a senha da pessoa
-// ========================================================
-// ========================================================
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
 
-// ⚠️ Config do projeto Firebase (expedicao-cd107)
-const firebaseConfig = {
-    apiKey: "AIzaSyAQ83rTxiPaWDc5Qs5z5ifPwNXA-HI_v_s",
-    authDomain: "expedicao-cd107.firebaseapp.com",
-    projectId: "expedicao-cd107",
-    storageBucket: "expedicao-cd107.firebasestorage.app",
-    messagingSenderId: "499997285923",
-    appId: "1:499997285923:web:1cbe3c84d7ae2d0e365b96"
-};
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Confirmação de Carregamento</title>
 
-const DOMINIO_FAKE = "@expedicao.local";
+    <link rel="stylesheet" href="style.css?v=3">
 
-firebase.initializeApp(firebaseConfig);
+    <!-- html2canvas (necessário pra gerar a imagem executiva do WhatsApp) -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-const auth = firebase.auth();
+    <!-- Firebase (Authentication) — versão "compat", funciona
+    direto com <script> sem precisar de build tools/bundler -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 
-// Não guarda a sessão em lugar nenhum (nem localStorage, nem
-// sessionStorage) — isso força a tela de login toda vez que a
-// página é recarregada (F5) ou reaberta, mesmo sem ter
-// "deslogado" explicitamente com o botão Sair.
-auth.setPersistence(firebase.auth.Auth.Persistence.NONE)
-.catch(erro=>{
+</head>
+<body>
 
-    console.error("Erro ao configurar persistência do login:", erro);
+    <!-- ABERTURA — MARCAS -->
+    <div id="telaAbertura" class="abertura-overlay" role="status" aria-label="Carregando aplicação">
+        <div class="abertura-glow abertura-glow-top" aria-hidden="true"></div>
+        <div class="abertura-glow abertura-glow-bottom" aria-hidden="true"></div>
 
-});
+        <div class="abertura-marca abertura-stok">
+            <img src="logo-stok-transparente.png" alt="Stok Center">
+        </div>
 
-// ---------- LOGIN ----------
+        <div class="abertura-encontro" aria-hidden="true">
+            <span></span><i></i><span></span>
+        </div>
 
-function matriculaParaEmail(matricula){
+        <div class="abertura-marca abertura-zaffari">
+            <img src="logo-zaffari-transparente.png" alt="Comercial Zaffari">
+        </div>
 
-    return matricula.trim() + DOMINIO_FAKE;
+        <p class="abertura-frase">Uma operação, duas grandes marcas</p>
+    </div>
 
-}
+    <!-- ===================================== -->
+    <!-- TELA DE LOGIN -->
+    <!-- ===================================== -->
 
-function mostrarErroLogin(mensagem){
+    <div id="telaLogin" class="login-overlay">
 
-    const el = document.getElementById("loginErro");
+        <div class="login-caixa">
 
-    el.textContent = mensagem;
-    el.style.display = "block";
+            <div class="login-logo">📦</div>
 
-}
+            <h2>Confirmação de Carregamento</h2>
+            <p>Entre com sua matrícula para continuar</p>
 
-function ocultarErroLogin(){
+            <form id="formLogin" onsubmit="return false;">
 
-    document.getElementById("loginErro").style.display = "none";
+                <label for="loginMatricula">Matrícula</label>
+                <input
+                    type="text"
+                    id="loginMatricula"
+                    placeholder="ex: 12345"
+                    autocomplete="username"
+                    inputmode="numeric">
 
-}
+                <label for="loginSenha">Senha</label>
+                <input
+                    type="password"
+                    id="loginSenha"
+                    placeholder="••••••••"
+                    autocomplete="current-password"
+                    onkeydown="if(event.key==='Enter') fazerLogin()">
 
-function fazerLogin(){
+                <div id="loginErro" class="login-erro" style="display:none;"></div>
 
-    ocultarErroLogin();
+                <button type="button" class="btn-login" onclick="fazerLogin()" id="btnLogin">
+                    🔑 Entrar
+                </button>
 
-    const matricula =
-    document.getElementById("loginMatricula").value.trim();
+            </form>
 
-    const senha =
-    document.getElementById("loginSenha").value;
+        </div>
 
-    if(!matricula || !senha){
+    </div>
 
-        mostrarErroLogin("Preenche matrícula e senha.");
+    <!-- ===================================== -->
+    <!-- APP (só aparece autenticado) -->
+    <!-- ===================================== -->
 
-        return;
+    <div id="appConteudo" style="display:none;">
 
-    }
+    <div class="container">
 
-    const btn = document.getElementById("btnLogin");
+        <div class="topo-usuario">
+            <span id="usuarioLogado" class="usuario-logado-info"></span>
+            <button class="btn-logout" onclick="fazerLogout()">🚪 Sair</button>
+        </div>
 
-    btn.disabled = true;
-    btn.innerText = "Entrando...";
+        <h1>📦 Confirmação de Carregamento</h1>
+        <p class="subtitulo">Foto + dados da doca → direto pro WhatsApp</p>
 
-    auth.signInWithEmailAndPassword(
-        matriculaParaEmail(matricula),
-        senha
-    )
-    .catch(erro=>{
+        <!-- ===================================== -->
+        <!-- FOTO -->
+        <!-- ===================================== -->
 
-        console.error(erro);
+        <div class="card">
 
-        const mapaErros = {
+            <h2>1. Foto</h2>
 
-            "auth/invalid-credential": "Matrícula ou senha incorretos.",
-            "auth/user-not-found": "Matrícula não cadastrada.",
-            "auth/wrong-password": "Senha incorreta.",
-            "auth/too-many-requests": "Muitas tentativas erradas. Espera um pouco e tenta de novo.",
-            "auth/network-request-failed": "Sem conexão com a internet."
+            <div id="fotoVazia" class="foto-area">
+                <div class="foto-icone">📷</div>
+                <p class="foto-texto">Tire uma foto da tela de paletes carregados ou escolha da galeria</p>
 
-        };
+                <div class="foto-botoes">
+                    <label class="btn-foto btn-tirar" for="inputCamera">
+                        📷 Tirar Foto
+                    </label>
+                    <input type="file" id="inputCamera" accept="image/*" capture="environment" class="file-hidden">
 
-        mostrarErroLogin(
-            mapaErros[erro.code] || "Erro ao entrar: " + erro.message
-        );
+                    <label class="btn-foto btn-galeria" for="inputGaleria">
+                        🖼️ Escolher da Galeria
+                    </label>
+                    <input type="file" id="inputGaleria" accept="image/*" class="file-hidden">
+                </div>
+            </div>
 
-    })
-    .finally(()=>{
+            <div id="fotoPreviewBox" class="foto-preview-box" style="display:none;">
+                <img id="fotoPreview" class="foto-preview" alt="Foto do carregamento">
+                <button type="button" class="btn-retirar" onclick="retirarFoto()">🔄 Trocar Foto</button>
+            </div>
 
-        btn.disabled = false;
-        btn.innerText = "🔑 Entrar";
+        </div>
 
-    });
+        <!-- ===================================== -->
+        <!-- DADOS -->
+        <!-- ===================================== -->
 
-}
+        <div class="card">
 
-function fazerLogout(){
+            <h2>2. Dados do Carregamento</h2>
 
-    const confirmaSair =
-    confirm("Tem certeza que quer sair?");
+            <div class="form-grid">
 
-    if(!confirmaSair) return;
+                <div class="campo">
+                    <label for="campoDoca">🚪 Doca</label>
+                    <input type="text" id="campoDoca" inputmode="numeric" placeholder="Ex: 46">
+                </div>
 
-    auth.signOut();
+                <div class="campo">
+                    <label for="campoLoja">🏪 Loja</label>
+                    <input type="text" id="campoLoja" inputmode="numeric" placeholder="Ex: 90">
+                </div>
 
-}
+                <div class="campo">
+                    <label for="campoPaletes">📦 Qtd. Paletes</label>
+                    <input type="number" id="campoPaletes" min="0" placeholder="Ex: 6">
+                </div>
 
-// ---------- CONTROLE DE TELA (login vs app) ----------
+                <div class="campo">
+                    <label for="campoCliente">🚛 Tipo de Veículo</label>
+                    <input type="text" id="campoCliente" placeholder="Ex: Carreta">
+                </div>
 
-auth.onAuthStateChanged(usuario=>{
+                <div class="campo campo-full">
+                    <label for="campoStatus">✅ Status</label>
+                    <select id="campoStatus">
+                        <option value="Faturada">Faturada</option>
+                        <option value="Não Faturada">Não Faturada</option>
+                        <option value="Em Conferência">Em Conferência</option>
+                        <option value="Pendente">Pendente</option>
+                    </select>
+                </div>
 
-    const telaLogin = document.getElementById("telaLogin");
-    const appConteudo = document.getElementById("appConteudo");
+                <div class="campo campo-full">
+                    <label for="campoObs">📝 Observação (opcional)</label>
+                    <input type="text" id="campoObs" placeholder="Ex: divergência de 1 palete">
+                </div>
 
-    if(usuario){
+            </div>
 
-        telaLogin.style.display = "none";
-        appConteudo.style.display = "block";
+            <button type="button" class="btn-revisar" onclick="abrirConfirmacao()">
+                👁️ Revisar e Enviar
+            </button>
 
-        const matricula =
-        usuario.email.replace(DOMINIO_FAKE, "");
+        </div>
 
-        document.getElementById("usuarioLogado").innerText =
-        "👤 Matrícula " + matricula;
+        <!-- ===================================== -->
+        <!-- LANÇAMENTO MANUAL DO DIA -->
+        <!-- ===================================== -->
 
-        document.getElementById("loginMatricula").value = "";
-        document.getElementById("loginSenha").value = "";
+        <div class="card">
 
-    }else{
+            <h2>3. Lançamento Manual do Dia</h2>
 
-        telaLogin.style.display = "flex";
-        appConteudo.style.display = "none";
+            <p class="texto-explicativo">
+                Números gerais do turno (não precisa de foto). Salvar substitui o
+                registro já existente pra data selecionada.
+            </p>
 
-    }
+            <div class="manual-grid">
 
-});
+                <div class="manual-campo">
+                    <label for="manualData">📅 Data</label>
+                    <input type="date" id="manualData">
+                </div>
+
+                <div class="manual-campo">
+                    <label for="manualCaminhoes">🚛 Caminhões carregados</label>
+                    <input type="number" id="manualCaminhoes" min="0" placeholder="0">
+                </div>
+
+                <div class="manual-campo">
+                    <label for="manualDocas">🚪 Docas produzidas</label>
+                    <input type="number" id="manualDocas" min="0" placeholder="0">
+                </div>
+
+                <div class="manual-campo">
+                    <label for="manualVeiculosTurnoA">✅ Veículos completados Turno A</label>
+                    <input type="number" id="manualVeiculosTurnoA" min="0" placeholder="0">
+                </div>
+
+                <div class="manual-campo">
+                    <label for="manualForaEscala">📦 Cargas fora da escala</label>
+                    <input type="number" id="manualForaEscala" min="0" placeholder="0">
+                </div>
+
+            </div>
+
+            <!-- LOJAS FATURADAS — chips + botão de adicionar -->
+
+            <div class="manual-lojas">
+
+                <div class="manual-lojas-cabecalho">
+
+                    <label>
+                        🏪 Lojas Faturadas
+                        <span id="manualLojasContador" class="manual-lojas-contador">0</span>
+                    </label>
+
+                    <button type="button" class="btn-add-loja" onclick="abrirModalLoja()">
+                        ➕ Adicionar Loja
+                    </button>
+
+                </div>
+
+                <div id="manualLojasChips" class="manual-lojas-chips">
+                    <span class="manual-lojas-vazio">Nenhuma loja adicionada ainda.</span>
+                </div>
+
+            </div>
+
+            <div class="acoes-manual">
+
+                <button type="button" class="btn-revisar" onclick="salvarRegistroManual()">
+                    💾 Salvar Registro do Dia
+                </button>
+
+                <button type="button" class="btn-limpar-manual" onclick="limparFormularioManual()">
+                    🧹 Limpar Formulário
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- REGISTROS DIÁRIOS SALVOS -->
+        <!-- ===================================== -->
+
+        <div class="card">
+
+            <h2>Registros Diários Salvos</h2>
+
+            <div id="manualRegistrosVazio" class="historico-vazio">
+                Nenhum registro diário salvo ainda.
+            </div>
+
+            <div id="manualRegistrosLista" class="historico-lista"></div>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- RELATÓRIO EXECUTIVO (WHATSAPP) -->
+        <!-- ===================================== -->
+
+        <div class="card">
+
+            <h2>Relatório Executivo (WhatsApp)</h2>
+
+            <p class="texto-explicativo">
+                Gera uma imagem-resumo dos registros salvos pra mandar no grupo —
+                escolha um dia específico ou some vários dias de um período.
+            </p>
+
+            <div class="relatorio-tipo">
+                <button type="button" class="tipo-btn ativo" data-tipo="dia" onclick="selecionarTipoRelatorio('dia')">
+                    📅 Dia Único
+                </button>
+                <button type="button" class="tipo-btn" data-tipo="periodo" onclick="selecionarTipoRelatorio('periodo')">
+                    📊 Período
+                </button>
+            </div>
+
+            <div id="relatorioDiaBox" class="relatorio-box">
+                <div class="manual-campo">
+                    <label for="relatorioDiaSelect">Selecionar dia salvo</label>
+                    <select id="relatorioDiaSelect"></select>
+                </div>
+            </div>
+
+            <div id="relatorioPeriodoBox" class="relatorio-box" style="display:none;">
+                <div class="manual-grid">
+                    <div class="manual-campo">
+                        <label for="relatorioDe">De</label>
+                        <input type="date" id="relatorioDe">
+                    </div>
+                    <div class="manual-campo">
+                        <label for="relatorioAte">Até</label>
+                        <input type="date" id="relatorioAte">
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn-revisar" onclick="gerarRelatorioExecutivo()">
+                📲 Gerar Imagem Executiva
+            </button>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- FATURAMENTO POR SETOR -->
+        <!-- ===================================== -->
+
+        <div class="card">
+
+            <h2>💰 Faturamento por Setor</h2>
+
+            <p class="texto-explicativo">
+                Sobe o TXT de faturamento e o sistema separa o valor faturado por setor
+                automaticamente. Se quiser, filtra por uma faixa de horário antes de
+                processar — funciona até virando a madrugada (ex: 22:00 até 07:00).
+            </p>
+
+            <div id="faturamentoVazio" class="foto-area">
+                <div class="foto-icone">📄</div>
+                <p class="foto-texto">Selecione o arquivo .txt de faturamento</p>
+
+                <label class="btn-foto btn-galeria" for="inputFaturamento">
+                    📁 Escolher Arquivo
+                </label>
+                <input type="file" id="inputFaturamento" accept=".txt" class="file-hidden">
+            </div>
+
+            <div id="faturamentoArquivoBox" class="faturamento-arquivo-box" style="display:none;">
+                <span id="faturamentoNomeArquivo" class="faturamento-nome-arquivo"></span>
+                <button type="button" class="btn-retirar" onclick="retirarArquivoFaturamento()">🔄 Trocar Arquivo</button>
+            </div>
+
+            <div class="faturamento-filtro-horario">
+
+                <label class="faturamento-checkbox-label" style="margin-bottom:12px;">
+                    🏷️ Filtrar por setor
+                </label>
+
+                <div class="multi-select" id="faturamentoSetorSelect">
+
+                    <button type="button" class="multi-select-toggle" onclick="toggleFaturamentoSetorDropdown()">
+                        <span id="faturamentoSetorToggleTexto">Selecione o arquivo primeiro</span>
+                        <span class="multi-select-seta">▾</span>
+                    </button>
+
+                    <div id="faturamentoSetorPainel" class="multi-select-painel" style="display:none;">
+
+                        <label class="multi-select-item multi-select-todos">
+                            <input type="checkbox" id="faturamentoSetorTodos" checked onchange="toggleTodosSetores(this.checked)">
+                            Todos
+                        </label>
+
+                        <div id="faturamentoSetorLista" class="multi-select-lista"></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="faturamento-filtro-horario">
+
+                <label class="faturamento-checkbox-label">
+                    <input type="checkbox" id="faturamentoFiltrarData">
+                    📅 Filtrar por data
+                </label>
+
+                <div id="faturamentoDataBox" class="manual-grid faturamento-horario-grid" style="display:none;">
+                    <div class="manual-campo">
+                        <label for="faturamentoDataDe">De</label>
+                        <input type="date" id="faturamentoDataDe">
+                    </div>
+                    <div class="manual-campo">
+                        <label for="faturamentoDataAte">Até</label>
+                        <input type="date" id="faturamentoDataAte">
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="faturamento-filtro-horario">
+
+                <label class="faturamento-checkbox-label">
+                    <input type="checkbox" id="faturamentoFiltrarHorario">
+                    🕐 Filtrar por horário
+                </label>
+
+                <div id="faturamentoHorarioBox" class="manual-grid faturamento-horario-grid" style="display:none;">
+                    <div class="manual-campo">
+                        <label for="faturamentoHoraDe">De</label>
+                        <input type="time" id="faturamentoHoraDe" value="22:00">
+                    </div>
+                    <div class="manual-campo">
+                        <label for="faturamentoHoraAte">Até</label>
+                        <input type="time" id="faturamentoHoraAte" value="07:00">
+                    </div>
+                </div>
+
+                <p id="faturamentoHorarioDica" class="texto-explicativo faturamento-horario-dica" style="display:none;">
+                    💡 Se "De" for maior que "Até", o filtro entende que a faixa vira a madrugada.
+                </p>
+
+            </div>
+
+            <button type="button" class="btn-revisar" onclick="processarFaturamento()">
+                📊 Processar Faturamento
+            </button>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- RESULTADO — FATURAMENTO -->
+        <!-- ===================================== -->
+
+        <div class="card" id="faturamentoResultadoCard" style="display:none;">
+
+            <h2>Relatório Gerado</h2>
+
+            <div id="faturamentoPreview" class="faturamento-preview"></div>
+
+            <button type="button" class="btn-revisar" style="margin-top:16px;" onclick="gerarImagemFaturamento()">
+                📲 Gerar Imagem Executiva
+            </button>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- HISTÓRICO DO DIA -->
+        <!-- ===================================== -->
+
+        <div class="card">
+
+            <div class="historico-cabecalho">
+                <h2>4. Fotos Enviadas Hoje</h2>
+                <button type="button" class="btn-limpar-historico" onclick="limparHistorico()">🧹 Limpar</button>
+            </div>
+
+            <div id="historicoVazio" class="historico-vazio">
+                Nenhum registro enviado ainda hoje.
+            </div>
+
+            <div id="historicoLista" class="historico-lista"></div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- MODAL — ADICIONAR LOJA -->
+    <!-- ===================================== -->
+
+    </div>
+    <!-- fecha #appConteudo -->
+
+    <div id="modalLoja" class="modal-overlay" style="display:none;">
+
+        <div class="modal-caixa">
+
+            <h3>🏪 Adicionar Loja</h3>
+            <p>Digite o número da loja que foi faturada.</p>
+
+            <input type="text" id="modalLojaInput" inputmode="numeric" placeholder="Ex: 90">
+
+            <div class="modal-acoes-coluna">
+                <button type="button" class="btn-compartilhar" onclick="confirmarLoja()">✔️ Adicionar</button>
+                <button type="button" class="btn-modal-cancelar" onclick="fecharModalLoja()">Cancelar</button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- MODAL — CONFIRMAÇÃO -->
+    <!-- ===================================== -->
+
+    <div id="modalConfirmar" class="modal-overlay" style="display:none;">
+
+        <div class="modal-caixa">
+
+            <h3>Confirmar Envio</h3>
+            <p>Confira os dados antes de enviar pro WhatsApp.</p>
+
+            <img id="modalFotoPreview" class="modal-foto" alt="Foto do carregamento">
+
+            <pre id="modalTextoPreview" class="modal-texto"></pre>
+
+            <div class="modal-acoes-coluna">
+
+                <button type="button" class="btn-compartilhar" onclick="compartilharWhatsApp()">
+                    📲 Compartilhar no WhatsApp
+                </button>
+
+                <button type="button" class="btn-so-texto" onclick="compartilharSoTexto()">
+                    💬 Enviar só o texto
+                </button>
+
+                <button type="button" class="btn-modal-cancelar" onclick="fecharConfirmacao()">
+                    ✏️ Voltar e Editar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- TOAST -->
+    <!-- ===================================== -->
+
+    <div id="toast" class="toast"></div>
+
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+
+</body>
+</html>
