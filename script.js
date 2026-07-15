@@ -866,10 +866,11 @@ function parseFaturamentoTXT(texto) {
     const cabecalho = linhas[0].split(';').map(h => h.trim().toUpperCase());
     const indice = nome => cabecalho.indexOf(nome);
 
-    const iSetor      = indice('DESCLINHASEPAR');
+    const iSetor       = indice('DESCLINHASEPAR');
     const iDataHora    = indice('DTAHORMOVIMENTO');
-    const iQtdVolumes = indice('QTD_VOLUMES');
+    const iQtdVolumes  = indice('QTD_VOLUMES');
     const iValor       = indice('VLRLIQVENDA');
+    const iSeqProduto  = indice('SEQPRODUTO');
 
     if (iSetor === -1 || iDataHora === -1 || iValor === -1) {
         return { erro: 'colunas' };
@@ -882,13 +883,14 @@ function parseFaturamentoTXT(texto) {
         const campos = linhas[i].split(';');
         if (campos.length <= Math.max(iSetor, iDataHora, iValor)) continue;
 
-        const setor = campos[iSetor].trim() || 'SEM SETOR';
-        const hora  = extrairHoraDeDataHora(campos[iDataHora]);
-        const data  = extrairDataDeDataHora(campos[iDataHora]);
-        const valor = parseNumeroBR(campos[iValor]);
-        const qtd   = iQtdVolumes > -1 ? parseNumeroBR(campos[iQtdVolumes]) : 0;
+        const setor   = campos[iSetor].trim() || 'SEM SETOR';
+        const hora    = extrairHoraDeDataHora(campos[iDataHora]);
+        const data    = extrairDataDeDataHora(campos[iDataHora]);
+        const valor   = parseNumeroBR(campos[iValor]);
+        const qtd     = iQtdVolumes > -1 ? parseNumeroBR(campos[iQtdVolumes]) : 0;
+        const produto = iSeqProduto > -1 ? campos[iSeqProduto].trim() : `${setor}|${i}`;
 
-        registros.push({ setor, hora, data, valor, qtd });
+        registros.push({ setor, hora, data, valor, qtd, produto });
     }
 
     return { registros };
@@ -906,15 +908,17 @@ function agruparFaturamentoPorSetor(registros) {
 
     registros.forEach(r => {
         if (!mapa.has(r.setor)) {
-            mapa.set(r.setor, { nome: r.setor, valor: 0, qtd: 0, linhas: 0 });
+            mapa.set(r.setor, { nome: r.setor, valor: 0, qtd: 0, produtos: new Set() });
         }
         const s = mapa.get(r.setor);
-        s.valor  += r.valor;
-        s.qtd    += r.qtd;
-        s.linhas += 1;
+        s.valor += r.valor;
+        s.qtd   += r.qtd;
+        s.produtos.add(r.produto);
     });
 
-    return [...mapa.values()].sort((a, b) => b.valor - a.valor);
+    return [...mapa.values()]
+        .map(s => ({ nome: s.nome, valor: s.valor, qtd: s.qtd, itens: s.produtos.size }))
+        .sort((a, b) => b.valor - a.valor);
 }
 
 async function processarFaturamento() {
@@ -986,10 +990,10 @@ async function processarFaturamento() {
             return;
         }
 
-        const setores          = agruparFaturamentoPorSetor(registrosFiltrados);
-        const totalFaturado    = registrosFiltrados.reduce((s, r) => s + r.valor, 0);
-        const quantidadeTotal  = registrosFiltrados.reduce((s, r) => s + r.qtd, 0);
-        const linhasFaturadas  = registrosFiltrados.length;
+        const setores           = agruparFaturamentoPorSetor(registrosFiltrados);
+        const totalFaturado     = registrosFiltrados.reduce((s, r) => s + r.valor, 0);
+        const volumesFaturados  = registrosFiltrados.reduce((s, r) => s + r.qtd, 0);
+        const itensFaturados    = new Set(registrosFiltrados.map(r => r.produto)).size;
 
         const agora = new Date();
         const geradoEm = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()}, `
@@ -1003,8 +1007,8 @@ async function processarFaturamento() {
             periodo: partesPeriodo.length > 0 ? partesPeriodo.join(' · ') : 'Faturamento completo do arquivo',
             geradoEm,
             totalFaturado,
-            quantidadeTotal,
-            linhasFaturadas,
+            volumesFaturados,
+            itensFaturados,
             setores,
             rotulo: (partesPeriodo.join('_') || 'completo').replace(/[: ]/g, '-')
         };
@@ -1040,7 +1044,7 @@ function linhaSetorFaturamentoHTML(s, indice, maxValor) {
             </div>
         </div>
         <div style="font-size:12px;color:#6B7280;margin:5px 0 10px;">
-            ${s.linhas} linhas · ${formatarNumeroBR(s.qtd)} unid.
+            ${formatarNumeroBR(s.itens)} itens · ${formatarNumeroBR(s.qtd)} vol.
         </div>
         <div style="height:6px;border-radius:3px;background:#EDEFF2;overflow:hidden;">
             <div style="height:100%;width:${pct}%;background:#3DCB82;border-radius:3px;"></div>
@@ -1069,8 +1073,8 @@ function montarConteudoFaturamentoHTML(d) {
         <div style="height:4px;background:#3DCB82;"></div>
         <div style="padding:26px 28px 8px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
             ${kpiColunaHTML('Total Faturado', 'R$ ' + formatarMoedaBR(d.totalFaturado), '#3DCB82')}
-            ${kpiColunaHTML('Quantidade Total', formatarNumeroBR(d.quantidadeTotal), '#4C8FD1')}
-            ${kpiColunaHTML('Linhas Faturadas', formatarNumeroBR(d.linhasFaturadas), '#F2A93B')}
+            ${kpiColunaHTML('Volumes Faturados', formatarNumeroBR(d.volumesFaturados), '#4C8FD1')}
+            ${kpiColunaHTML('Itens Faturados', formatarNumeroBR(d.itensFaturados), '#F2A93B')}
         </div>
         <div style="padding:20px 28px 28px;background:#FFFFFF;">
             <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280;margin-bottom:6px;">
