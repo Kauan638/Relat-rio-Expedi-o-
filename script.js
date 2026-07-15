@@ -468,6 +468,7 @@ function coletarDadosRelatorio() {
             veiculosA: registro.veiculosA,
             foraEscala: registro.foraEscala,
             lojas: registro.lojas,
+            detalhamento: [registro],
             rotulo: registro.data
         };
     }
@@ -480,7 +481,9 @@ function coletarDadosRelatorio() {
         return null;
     }
 
-    const filtrados = registros.filter(r => r.data >= de && r.data <= ate);
+    const filtrados = registros
+        .filter(r => r.data >= de && r.data <= ate)
+        .sort((a, b) => (a.data < b.data ? -1 : 1));
 
     if (filtrados.length === 0) {
         mostrarToast('Nenhum registro salvo nesse período.', 'erro');
@@ -499,19 +502,23 @@ function coletarDadosRelatorio() {
     });
 
     return {
-        periodo: `${formatarDataBR(de)} a ${formatarDataBR(ate)} · ${filtrados.length} dia${filtrados.length > 1 ? 's' : ''}`,
+        periodo: `${formatarDataBR(de)} a ${formatarDataBR(ate)}`,
         caminhoes, docas, veiculosA, foraEscala,
         lojas: [...lojasSet],
+        detalhamento: filtrados,
         rotulo: `${de}_a_${ate}`
     };
 }
 
-function kpiBoxHTML(label, valor, cor, full) {
-    return `<div style="background:#1D2329;border:1px solid #2A323B;border-left:4px solid ${cor};` +
-        `border-radius:6px;padding:14px 16px;${full ? 'width:100%;' : ''}">` +
-        `<div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8B97A3;margin-bottom:6px;">${escapeHTML(label)}</div>` +
-        `<div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:${cor};">${valor}</div>` +
-        `</div>`;
+function kpiColunaHTML(label, valor, cor) {
+    return `<div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8B97A3;margin-bottom:6px;">
+            ${escapeHTML(label)}
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;color:${cor};">
+            ${valor}
+        </div>
+    </div>`;
 }
 
 function montarContainerRelatorio(d) {
@@ -521,41 +528,68 @@ function montarContainerRelatorio(d) {
     div.style.position = 'fixed';
     div.style.left = '-9999px';
     div.style.top = '0';
-    div.style.width = '420px';
-    div.style.background = 'linear-gradient(180deg,#1A2027 0%,#14181C 60%)';
-    div.style.padding = '24px';
+    div.style.width = '680px';
+    div.style.background = '#FFFFFF';
     div.style.fontFamily = "'Inter',sans-serif";
-    div.style.color = '#E7ECF1';
+    div.style.color = '#14181C';
     div.style.borderRadius = '10px';
+    div.style.overflow = 'hidden';
 
-    const lojasHTML = d.lojas.length ? `
-        <div style="margin-top:16px;">
-            <div style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8B97A3;margin-bottom:8px;border-left:3px solid #F2A93B;padding-left:8px;">
-                Lojas Faturadas (${d.lojas.length})
+    const agora = new Date();
+    const geradoEm = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')}/${agora.getFullYear()}, `
+        + `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
+
+    const maxCaminhoes = Math.max(...d.detalhamento.map(r => r.caminhoes), 1);
+
+    const linhasDetalhe = d.detalhamento.map((r, i) => {
+
+        const pct = Math.round((r.caminhoes / maxCaminhoes) * 100);
+        const borda = i > 0 ? 'border-top:1px solid #EDEFF2;' : '';
+
+        return `
+        <div style="padding:18px 0;${borda}">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+                <div style="font-weight:700;font-size:16px;color:#14181C;">📅 ${escapeHTML(formatarDataBR(r.data))}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:#4C8FD1;white-space:nowrap;">
+                    ${r.caminhoes} caminhões
+                </div>
             </div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#E7ECF1;">
-                ${d.lojas.map(l => escapeHTML(l)).join(' · ')}
+            <div style="font-size:12.5px;color:#6B7280;margin-bottom:10px;">
+                🚪 ${r.docas} docas &nbsp;·&nbsp; 🏪 ${r.lojas.length} lojas faturadas &nbsp;·&nbsp;
+                🔄 ${r.veiculosA} veíc. Turno A &nbsp;·&nbsp; ⚠️ ${r.foraEscala} fora da escala
             </div>
-        </div>` : '';
+            <div style="height:6px;border-radius:3px;background:#EDEFF2;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:#4C8FD1;border-radius:3px;"></div>
+            </div>
+        </div>`;
+    }).join('');
 
     div.innerHTML = `
-        <div style="text-align:center;margin-bottom:4px;">
-            <div style="font-family:'Oswald',sans-serif;font-weight:600;font-size:18px;letter-spacing:.03em;text-transform:uppercase;">
-                🚛 Relatório Executivo — Expedição
+        <div style="background:#14181C;padding:24px 28px 18px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="font-size:26px;">🚛</div>
+                <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:21px;letter-spacing:.02em;text-transform:uppercase;color:#fff;">
+                    Relatório Executivo — Expedição
+                </div>
             </div>
-            <div style="font-size:12px;color:#8B97A3;margin-top:4px;">${escapeHTML(d.periodo)}</div>
-            <div style="height:4px;width:120px;margin:12px auto 18px;border-radius:2px;background:repeating-linear-gradient(135deg,#F2A93B 0 8px,#14181C 8px 16px);opacity:.85;"></div>
+            <div style="font-size:13px;color:#9AA5B1;margin-top:8px;">
+                Período: ${escapeHTML(d.periodo)} · gerado em ${geradoEm}
+            </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            ${kpiBoxHTML('Caminhões', d.caminhoes, '#4C8FD1')}
-            ${kpiBoxHTML('Docas Produzidas', d.docas, '#F2A93B')}
-            ${kpiBoxHTML('Veículos Turno A', d.veiculosA, '#3DCB82')}
-            ${kpiBoxHTML('Fora da Escala', d.foraEscala, '#E8564F')}
+        <div style="height:4px;background:#F2A93B;"></div>
+        <div style="padding:26px 28px 8px;display:flex;justify-content:space-between;gap:12px;">
+            ${kpiColunaHTML('Caminhões', d.caminhoes, '#4C8FD1')}
+            ${kpiColunaHTML('Docas', d.docas, '#F2A93B')}
+            ${kpiColunaHTML('Lojas Faturadas', d.lojas.length, '#3DCB82')}
+            ${kpiColunaHTML('Veículos Turno A', d.veiculosA, '#6B7280')}
+            ${kpiColunaHTML('Fora da Escala', d.foraEscala, '#E8564F')}
         </div>
-        <div style="text-align:center;margin-top:10px;">
-            ${kpiBoxHTML('Lojas Faturadas', d.lojas.length, '#3DCB82', true)}
+        <div style="padding:20px 28px 28px;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280;margin-bottom:6px;">
+                Detalhamento por Dia
+            </div>
+            ${linhasDetalhe}
         </div>
-        ${lojasHTML}
     `;
 
     document.body.appendChild(div);
