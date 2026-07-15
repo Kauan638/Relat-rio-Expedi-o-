@@ -151,14 +151,20 @@ function coletarDados() {
 }
 
 function construirMensagem(d) {
+
+    const emojiStatus = {
+        'Faturada':        '✅',
+        'Não Faturada':    '⚠️',
+        'Em Conferência':  '🔎',
+        'Pendente':        '⏳'
+    }[d.status] || '📋';
+
     const linhas = [
-        `Doca ${d.doca}`,
-        `Loja ${d.loja}`,
-        `${d.paletes} plts`,
-        d.cliente,
-        d.status
+        `📦 *Doca ${d.doca}* • Loja *${d.loja}*`,
+        `${d.paletes} plts — ${d.cliente}`,
+        `${emojiStatus} *${d.status}*`
     ];
-    if (d.obs) linhas.push(d.obs);
+    if (d.obs) linhas.push(`_${d.obs}_`);
     return linhas.join('\n');
 }
 
