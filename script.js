@@ -217,7 +217,7 @@ function abrirConfirmacao() {
     const dados = coletarDados();
 
     if (!dados.doca || !dados.loja || !dados.paletes || !dados.cliente) {
-        mostrarToast('Preenche Doca, Loja, Paletes e Cliente.', 'erro');
+        mostrarToast('Preenche Doca, Loja, Paletes e Tipo de Veículo.', 'erro');
         return;
     }
 
