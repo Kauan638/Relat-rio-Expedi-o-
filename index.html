@@ -6,7 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Confirmação de Carregamento</title>
 
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
+
+    <!-- html2canvas (necessário pra gerar a imagem executiva do WhatsApp) -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 </head>
 <body>
@@ -193,6 +196,54 @@
             </div>
 
             <div id="manualRegistrosLista" class="historico-lista"></div>
+
+        </div>
+
+        <!-- ===================================== -->
+        <!-- RELATÓRIO EXECUTIVO (WHATSAPP) -->
+        <!-- ===================================== -->
+
+        <div class="card">
+
+            <h2>Relatório Executivo (WhatsApp)</h2>
+
+            <p class="texto-explicativo">
+                Gera uma imagem-resumo dos registros salvos pra mandar no grupo —
+                escolha um dia específico ou some vários dias de um período.
+            </p>
+
+            <div class="relatorio-tipo">
+                <button type="button" class="tipo-btn ativo" data-tipo="dia" onclick="selecionarTipoRelatorio('dia')">
+                    📅 Dia Único
+                </button>
+                <button type="button" class="tipo-btn" data-tipo="periodo" onclick="selecionarTipoRelatorio('periodo')">
+                    📊 Período
+                </button>
+            </div>
+
+            <div id="relatorioDiaBox" class="relatorio-box">
+                <div class="manual-campo">
+                    <label for="relatorioDiaSelect">Selecionar dia salvo</label>
+                    <select id="relatorioDiaSelect"></select>
+                </div>
+            </div>
+
+            <div id="relatorioPeriodoBox" class="relatorio-box" style="display:none;">
+                <div class="manual-grid">
+                    <div class="manual-campo">
+                        <label for="relatorioDe">De</label>
+                        <input type="date" id="relatorioDe">
+                    </div>
+                    <div class="manual-campo">
+                        <label for="relatorioAte">Até</label>
+                        <input type="date" id="relatorioAte">
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="btn-revisar" onclick="gerarRelatorioExecutivo()">
+                📲 Gerar Imagem Executiva
+            </button>
 
         </div>
 

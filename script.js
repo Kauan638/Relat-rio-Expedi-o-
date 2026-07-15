@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHistorico();
     renderLojasChips();
     renderRegistrosManuais();
+    popularSelectRelatorio();
 });
 
 /* ---------- FOTO: CAPTURA + COMPRESSÃO ---------- */
@@ -357,6 +358,7 @@ function salvarRegistroManual() {
 
     mostrarToast('Registro do dia salvo ✅');
     renderRegistrosManuais();
+    popularSelectRelatorio();
 }
 
 function limparFormularioManual() {
@@ -377,6 +379,7 @@ function excluirRegistroManual(data) {
     const registros = obterRegistrosManuais().filter(r => r.data !== data);
     localStorage.setItem('carregamento_registrosManuais', JSON.stringify(registros));
     renderRegistrosManuais();
+    popularSelectRelatorio();
 }
 
 function formatarDataBR(iso) {
@@ -406,6 +409,216 @@ function renderRegistrosManuais() {
             <button type="button" class="btn-excluir-registro" data-data="${escapeHTML(r.data)}">✕</button>
         </div>`;
     }).join('');
+}
+
+/* ---------- RELATÓRIO EXECUTIVO (WHATSAPP) ---------- */
+
+let _tipoRelatorio = 'dia';
+
+function selecionarTipoRelatorio(tipo) {
+
+    _tipoRelatorio = tipo;
+
+    document.querySelectorAll('.tipo-btn').forEach(btn => {
+        btn.classList.toggle('ativo', btn.dataset.tipo === tipo);
+    });
+
+    document.getElementById('relatorioDiaBox').style.display = tipo === 'dia' ? 'block' : 'none';
+    document.getElementById('relatorioPeriodoBox').style.display = tipo === 'periodo' ? 'block' : 'none';
+}
+
+function popularSelectRelatorio() {
+
+    const select = document.getElementById('relatorioDiaSelect');
+    const registros = obterRegistrosManuais();
+
+    if (registros.length === 0) {
+        select.innerHTML = '<option value="">Nenhum registro salvo</option>';
+        return;
+    }
+
+    select.innerHTML = registros.map(r =>
+        `<option value="${escapeHTML(r.data)}">${escapeHTML(formatarDataBR(r.data))}</option>`
+    ).join('');
+}
+
+function coletarDadosRelatorio() {
+
+    const registros = obterRegistrosManuais();
+
+    if (registros.length === 0) {
+        mostrarToast('Nenhum registro diário salvo ainda.', 'erro');
+        return null;
+    }
+
+    if (_tipoRelatorio === 'dia') {
+
+        const data = document.getElementById('relatorioDiaSelect').value;
+        const registro = registros.find(r => r.data === data);
+
+        if (!registro) {
+            mostrarToast('Selecione um dia salvo.', 'erro');
+            return null;
+        }
+
+        return {
+            periodo: formatarDataBR(registro.data),
+            caminhoes: registro.caminhoes,
+            docas: registro.docas,
+            veiculosA: registro.veiculosA,
+            foraEscala: registro.foraEscala,
+            lojas: registro.lojas,
+            rotulo: registro.data
+        };
+    }
+
+    const de = document.getElementById('relatorioDe').value;
+    const ate = document.getElementById('relatorioAte').value;
+
+    if (!de || !ate) {
+        mostrarToast('Preencha as datas De e Até.', 'erro');
+        return null;
+    }
+
+    const filtrados = registros.filter(r => r.data >= de && r.data <= ate);
+
+    if (filtrados.length === 0) {
+        mostrarToast('Nenhum registro salvo nesse período.', 'erro');
+        return null;
+    }
+
+    const lojasSet = new Set();
+    let caminhoes = 0, docas = 0, veiculosA = 0, foraEscala = 0;
+
+    filtrados.forEach(r => {
+        caminhoes += r.caminhoes;
+        docas += r.docas;
+        veiculosA += r.veiculosA;
+        foraEscala += r.foraEscala;
+        r.lojas.forEach(l => lojasSet.add(l));
+    });
+
+    return {
+        periodo: `${formatarDataBR(de)} a ${formatarDataBR(ate)} · ${filtrados.length} dia${filtrados.length > 1 ? 's' : ''}`,
+        caminhoes, docas, veiculosA, foraEscala,
+        lojas: [...lojasSet],
+        rotulo: `${de}_a_${ate}`
+    };
+}
+
+function kpiBoxHTML(label, valor, cor, full) {
+    return `<div style="background:#1D2329;border:1px solid #2A323B;border-left:4px solid ${cor};` +
+        `border-radius:6px;padding:14px 16px;${full ? 'width:100%;' : ''}">` +
+        `<div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8B97A3;margin-bottom:6px;">${escapeHTML(label)}</div>` +
+        `<div style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:${cor};">${valor}</div>` +
+        `</div>`;
+}
+
+function montarContainerRelatorio(d) {
+
+    const div = document.createElement('div');
+    div.id = 'relatorioParaImagem';
+    div.style.position = 'fixed';
+    div.style.left = '-9999px';
+    div.style.top = '0';
+    div.style.width = '420px';
+    div.style.background = 'linear-gradient(180deg,#1A2027 0%,#14181C 60%)';
+    div.style.padding = '24px';
+    div.style.fontFamily = "'Inter',sans-serif";
+    div.style.color = '#E7ECF1';
+    div.style.borderRadius = '10px';
+
+    const lojasHTML = d.lojas.length ? `
+        <div style="margin-top:16px;">
+            <div style="font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8B97A3;margin-bottom:8px;border-left:3px solid #F2A93B;padding-left:8px;">
+                Lojas Faturadas (${d.lojas.length})
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.8;color:#E7ECF1;">
+                ${d.lojas.map(l => escapeHTML(l)).join(' · ')}
+            </div>
+        </div>` : '';
+
+    div.innerHTML = `
+        <div style="text-align:center;margin-bottom:4px;">
+            <div style="font-family:'Oswald',sans-serif;font-weight:600;font-size:18px;letter-spacing:.03em;text-transform:uppercase;">
+                🚛 Relatório Executivo — Expedição
+            </div>
+            <div style="font-size:12px;color:#8B97A3;margin-top:4px;">${escapeHTML(d.periodo)}</div>
+            <div style="height:4px;width:120px;margin:12px auto 18px;border-radius:2px;background:repeating-linear-gradient(135deg,#F2A93B 0 8px,#14181C 8px 16px);opacity:.85;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            ${kpiBoxHTML('Caminhões', d.caminhoes, '#4C8FD1')}
+            ${kpiBoxHTML('Docas Produzidas', d.docas, '#F2A93B')}
+            ${kpiBoxHTML('Veículos Turno A', d.veiculosA, '#3DCB82')}
+            ${kpiBoxHTML('Fora da Escala', d.foraEscala, '#E8564F')}
+        </div>
+        <div style="text-align:center;margin-top:10px;">
+            ${kpiBoxHTML('Lojas Faturadas', d.lojas.length, '#3DCB82', true)}
+        </div>
+        ${lojasHTML}
+    `;
+
+    document.body.appendChild(div);
+    return div;
+}
+
+async function gerarRelatorioExecutivo() {
+
+    const dados = coletarDadosRelatorio();
+    if (!dados) return;
+
+    if (typeof html2canvas === 'undefined') {
+        mostrarToast('Biblioteca de imagem não carregou. Verifica sua conexão.', 'erro');
+        return;
+    }
+
+    const container = montarContainerRelatorio(dados);
+
+    try {
+
+        const canvas = await html2canvas(container, { backgroundColor: null, scale: 2 });
+        container.remove();
+
+        canvas.toBlob(async blob => {
+
+            if (!blob) {
+                mostrarToast('Não consegui gerar a imagem.', 'erro');
+                return;
+            }
+
+            const nomeArquivo = `relatorio-expedicao-${dados.rotulo}.png`;
+            const arquivo = new File([blob], nomeArquivo, { type: 'image/png' });
+
+            if (navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+                try {
+                    await navigator.share({ files: [arquivo], title: 'Relatório Executivo — Expedição' });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            baixarBlob(blob, nomeArquivo);
+            mostrarToast('Imagem baixada — anexa ela no WhatsApp.');
+
+        }, 'image/png');
+
+    } catch (err) {
+        console.error('Erro ao gerar relatório executivo:', err);
+        container.remove();
+        mostrarToast('Não consegui gerar a imagem.', 'erro');
+    }
+}
+
+function baixarBlob(blob, nome) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nome;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 /* ---------- HISTÓRICO (LOCAL, POR DIA) ---------- */

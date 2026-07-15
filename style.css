@@ -468,6 +468,53 @@ LANÇAMENTO MANUAL DO DIA
     color:#fff;
 }
 
+/* ---------- RELATÓRIO EXECUTIVO (DIA/PERÍODO) ---------- */
+
+.relatorio-tipo{
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+}
+
+.tipo-btn{
+    flex:1;
+    padding:11px 10px;
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-sm);
+    background:var(--surface-alt);
+    color:var(--text-muted);
+    font-weight:700;
+    font-size:.76rem;
+    letter-spacing:.02em;
+    cursor:pointer;
+}
+
+.tipo-btn.ativo{
+    border-color:var(--amber);
+    background:var(--amber-dim);
+    color:var(--amber);
+}
+
+.relatorio-box{
+    margin-bottom:18px;
+}
+
+.relatorio-box select{
+    padding:12px;
+    border-radius:var(--radius-sm);
+    background:var(--surface-alt);
+    border:1px solid var(--border-light);
+    color:var(--text);
+    font-family:var(--font-mono);
+    font-size:.9rem;
+    width:100%;
+}
+
+.relatorio-box select:focus{
+    outline:none;
+    border-color:var(--amber);
+}
+
 /* input de texto simples dentro do modal (ex: nº da loja) */
 .modal-caixa > input{
     width:100%;
