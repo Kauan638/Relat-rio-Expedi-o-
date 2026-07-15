@@ -48,6 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('inputFaturamento')
         .addEventListener('change', e => handleArquivoFaturamento(e.target.files[0]));
 
+    document.addEventListener('click', e => {
+        const select = document.getElementById('faturamentoSetorSelect');
+        if (select && !select.contains(e.target)) {
+            document.getElementById('faturamentoSetorPainel').style.display = 'none';
+        }
+    });
+
     document.getElementById('faturamentoFiltrarData')
         .addEventListener('change', e => {
             document.getElementById('faturamentoDataBox').style.display = e.target.checked ? 'grid' : 'none';
@@ -682,12 +689,16 @@ function baixarBlob(blob, nome) {
 
 let _faturamentoArquivo = null;
 let _dadosFaturamentoAtual = null;
+let _registrosFaturamentoCache = null;
+let _setoresDisponiveis = [];
+let _setoresSelecionados = new Set();
 
-function handleArquivoFaturamento(file) {
+async function handleArquivoFaturamento(file) {
 
     if (!file) return;
 
     _faturamentoArquivo = file;
+    _registrosFaturamentoCache = null;
 
     document.getElementById('faturamentoNomeArquivo').textContent = file.name;
     document.getElementById('faturamentoArquivoBox').style.display = 'flex';
@@ -695,11 +706,44 @@ function handleArquivoFaturamento(file) {
 
     document.getElementById('faturamentoResultadoCard').style.display = 'none';
     _dadosFaturamentoAtual = null;
+
+    document.getElementById('faturamentoSetorToggleTexto').textContent = 'Lendo arquivo...';
+
+    try {
+
+        const texto = await lerArquivoComoTextoISO88591(file);
+        const { registros, erro } = parseFaturamentoTXT(texto);
+
+        if (erro === 'vazio') {
+            mostrarToast('O arquivo está vazio ou não tem linhas de dado.', 'erro');
+            document.getElementById('faturamentoSetorToggleTexto').textContent = 'Selecione o arquivo primeiro';
+            return;
+        }
+
+        if (erro === 'colunas') {
+            mostrarToast('Não encontrei as colunas esperadas (setor / data-hora / valor) no arquivo.', 'erro');
+            document.getElementById('faturamentoSetorToggleTexto').textContent = 'Selecione o arquivo primeiro';
+            return;
+        }
+
+        _registrosFaturamentoCache = registros;
+
+        const setoresUnicos = [...new Set(registros.map(r => r.setor))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        popularFiltroSetores(setoresUnicos);
+
+    } catch (err) {
+        console.error('Erro ao ler arquivo de faturamento:', err);
+        mostrarToast('Não consegui ler o arquivo.', 'erro');
+        document.getElementById('faturamentoSetorToggleTexto').textContent = 'Selecione o arquivo primeiro';
+    }
 }
 
 function retirarArquivoFaturamento() {
 
     _faturamentoArquivo = null;
+    _registrosFaturamentoCache = null;
+    _setoresDisponiveis = [];
+    _setoresSelecionados = new Set();
 
     document.getElementById('inputFaturamento').value = '';
     document.getElementById('faturamentoArquivoBox').style.display = 'none';
@@ -707,6 +751,71 @@ function retirarArquivoFaturamento() {
 
     document.getElementById('faturamentoResultadoCard').style.display = 'none';
     _dadosFaturamentoAtual = null;
+
+    document.getElementById('faturamentoSetorLista').innerHTML = '';
+    document.getElementById('faturamentoSetorTodos').checked = true;
+    document.getElementById('faturamentoSetorPainel').style.display = 'none';
+    document.getElementById('faturamentoSetorToggleTexto').textContent = 'Selecione o arquivo primeiro';
+}
+
+function popularFiltroSetores(setores) {
+
+    _setoresDisponiveis  = setores;
+    _setoresSelecionados = new Set(setores);
+
+    const lista = document.getElementById('faturamentoSetorLista');
+    lista.innerHTML = setores.map(s => `
+        <label class="multi-select-item">
+            <input type="checkbox" checked data-setor="${escapeHTML(s)}" onchange="toggleSetorIndividual(this)">
+            ${escapeHTML(s)}
+        </label>
+    `).join('');
+
+    document.getElementById('faturamentoSetorTodos').checked = true;
+    atualizarTextoToggleSetores();
+}
+
+function toggleTodosSetores(marcado) {
+
+    _setoresSelecionados = marcado ? new Set(_setoresDisponiveis) : new Set();
+
+    document.querySelectorAll('#faturamentoSetorLista input[type="checkbox"]')
+        .forEach(cb => { cb.checked = marcado; });
+
+    atualizarTextoToggleSetores();
+}
+
+function toggleSetorIndividual(checkbox) {
+
+    const setor = checkbox.dataset.setor;
+
+    if (checkbox.checked) _setoresSelecionados.add(setor);
+    else _setoresSelecionados.delete(setor);
+
+    document.getElementById('faturamentoSetorTodos').checked =
+        _setoresDisponiveis.length > 0 && _setoresSelecionados.size === _setoresDisponiveis.length;
+
+    atualizarTextoToggleSetores();
+}
+
+function atualizarTextoToggleSetores() {
+
+    const el = document.getElementById('faturamentoSetorToggleTexto');
+    const total = _setoresDisponiveis.length;
+    const marcados = _setoresSelecionados.size;
+
+    if (total === 0) el.textContent = 'Selecione o arquivo primeiro';
+    else if (marcados === total) el.textContent = `Todos os setores (${total})`;
+    else if (marcados === 0) el.textContent = 'Nenhum setor selecionado';
+    else el.textContent = `${marcados} de ${total} setores`;
+}
+
+function toggleFaturamentoSetorDropdown() {
+
+    if (_setoresDisponiveis.length === 0) return;
+
+    const painel = document.getElementById('faturamentoSetorPainel');
+    painel.style.display = painel.style.display === 'none' ? 'block' : 'none';
 }
 
 function lerArquivoComoTextoISO88591(file) {
@@ -810,35 +919,27 @@ function agruparFaturamentoPorSetor(registros) {
 
 async function processarFaturamento() {
 
-    if (!_faturamentoArquivo) {
+    if (!_registrosFaturamentoCache) {
         mostrarToast('Escolhe o arquivo de faturamento primeiro.', 'erro');
+        return;
+    }
+
+    if (_setoresSelecionados.size === 0) {
+        mostrarToast('Marca pelo menos um setor no filtro.', 'erro');
         return;
     }
 
     try {
 
-        const texto = await lerArquivoComoTextoISO88591(_faturamentoArquivo);
-        const { registros, erro } = parseFaturamentoTXT(texto);
+        let registrosFiltrados = _registrosFaturamentoCache;
 
-        if (erro === 'vazio') {
-            mostrarToast('O arquivo está vazio ou não tem linhas de dado.', 'erro');
-            return;
-        }
-
-        if (erro === 'colunas') {
-            mostrarToast('Não encontrei as colunas esperadas (setor / data-hora / valor) no arquivo.', 'erro');
-            return;
-        }
-
-        if (registros.length === 0) {
-            mostrarToast('Nenhuma linha de dado encontrada no arquivo.', 'erro');
-            return;
+        if (_setoresSelecionados.size < _setoresDisponiveis.length) {
+            registrosFiltrados = registrosFiltrados.filter(r => _setoresSelecionados.has(r.setor));
         }
 
         const filtrarData     = document.getElementById('faturamentoFiltrarData').checked;
         const filtrarHorario  = document.getElementById('faturamentoFiltrarHorario').checked;
 
-        let registrosFiltrados = registros;
         let dataTexto = null;
         let horarioTexto = null;
 
@@ -880,6 +981,11 @@ async function processarFaturamento() {
             }
         }
 
+        if (registrosFiltrados.length === 0) {
+            mostrarToast('Nenhum lançamento com esses filtros.', 'erro');
+            return;
+        }
+
         const setores          = agruparFaturamentoPorSetor(registrosFiltrados);
         const totalFaturado    = registrosFiltrados.reduce((s, r) => s + r.valor, 0);
         const quantidadeTotal  = registrosFiltrados.reduce((s, r) => s + r.qtd, 0);
@@ -908,7 +1014,7 @@ async function processarFaturamento() {
 
     } catch (err) {
         console.error('Erro ao processar faturamento:', err);
-        mostrarToast('Não consegui ler o arquivo.', 'erro');
+        mostrarToast('Não consegui processar o arquivo.', 'erro');
     }
 }
 

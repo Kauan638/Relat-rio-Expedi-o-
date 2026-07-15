@@ -604,6 +604,88 @@ FATURAMENTO POR SETOR
     box-shadow:0 10px 30px rgba(0,0,0,.35);
 }
 
+/* ---------- MULTI-SELECT (FILTRO DE SETOR) ---------- */
+
+.multi-select{
+    position:relative;
+}
+
+.multi-select-toggle{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 14px;
+    border-radius:var(--radius-sm);
+    background:var(--surface-alt);
+    border:1px solid var(--border-light);
+    color:var(--text);
+    font-family:var(--font-mono);
+    font-size:.85rem;
+    text-align:left;
+    cursor:pointer;
+}
+
+.multi-select-toggle:active,
+.multi-select-toggle:focus{
+    outline:none;
+    border-color:var(--amber);
+}
+
+.multi-select-seta{
+    color:var(--text-muted);
+    flex-shrink:0;
+}
+
+.multi-select-painel{
+    position:absolute;
+    z-index:20;
+    top:calc(100% + 6px);
+    left:0;
+    right:0;
+    max-height:260px;
+    overflow-y:auto;
+    background:var(--surface-alt);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-sm);
+    box-shadow:0 12px 28px rgba(0,0,0,.45);
+    padding:6px 0;
+}
+
+.multi-select-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 14px;
+    font-size:.85rem;
+    color:var(--text);
+    cursor:pointer;
+}
+
+.multi-select-item:active{
+    background:var(--surface);
+}
+
+.multi-select-item input[type="checkbox"]{
+    width:17px;
+    height:17px;
+    accent-color:var(--amber);
+    cursor:pointer;
+    flex-shrink:0;
+}
+
+.multi-select-todos{
+    border-bottom:1px solid var(--border-light);
+    font-weight:700;
+    margin-bottom:4px;
+}
+
+.multi-select-lista{
+    max-height:200px;
+    overflow-y:auto;
+}
+
 
 
 .historico-cabecalho{

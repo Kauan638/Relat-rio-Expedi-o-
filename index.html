@@ -278,6 +278,34 @@
 
             <div class="faturamento-filtro-horario">
 
+                <label class="faturamento-checkbox-label" style="margin-bottom:12px;">
+                    🏷️ Filtrar por setor
+                </label>
+
+                <div class="multi-select" id="faturamentoSetorSelect">
+
+                    <button type="button" class="multi-select-toggle" onclick="toggleFaturamentoSetorDropdown()">
+                        <span id="faturamentoSetorToggleTexto">Selecione o arquivo primeiro</span>
+                        <span class="multi-select-seta">▾</span>
+                    </button>
+
+                    <div id="faturamentoSetorPainel" class="multi-select-painel" style="display:none;">
+
+                        <label class="multi-select-item multi-select-todos">
+                            <input type="checkbox" id="faturamentoSetorTodos" checked onchange="toggleTodosSetores(this.checked)">
+                            Todos
+                        </label>
+
+                        <div id="faturamentoSetorLista" class="multi-select-lista"></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="faturamento-filtro-horario">
+
                 <label class="faturamento-checkbox-label">
                     <input type="checkbox" id="faturamentoFiltrarData">
                     📅 Filtrar por data
