@@ -11,10 +11,69 @@
     <!-- html2canvas (necessário pra gerar a imagem executiva do WhatsApp) -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
+    <!-- Firebase (Authentication) — versão "compat", funciona
+    direto com <script> sem precisar de build tools/bundler -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+
 </head>
 <body>
 
+    <!-- ===================================== -->
+    <!-- TELA DE LOGIN -->
+    <!-- ===================================== -->
+
+    <div id="telaLogin" class="login-overlay">
+
+        <div class="login-caixa">
+
+            <div class="login-logo">📦</div>
+
+            <h2>Confirmação de Carregamento</h2>
+            <p>Entre com sua matrícula para continuar</p>
+
+            <form id="formLogin" onsubmit="return false;">
+
+                <label for="loginMatricula">Matrícula</label>
+                <input
+                    type="text"
+                    id="loginMatricula"
+                    placeholder="ex: 12345"
+                    autocomplete="username"
+                    inputmode="numeric">
+
+                <label for="loginSenha">Senha</label>
+                <input
+                    type="password"
+                    id="loginSenha"
+                    placeholder="••••••••"
+                    autocomplete="current-password"
+                    onkeydown="if(event.key==='Enter') fazerLogin()">
+
+                <div id="loginErro" class="login-erro" style="display:none;"></div>
+
+                <button type="button" class="btn-login" onclick="fazerLogin()" id="btnLogin">
+                    🔑 Entrar
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- ===================================== -->
+    <!-- APP (só aparece autenticado) -->
+    <!-- ===================================== -->
+
+    <div id="appConteudo" style="display:none;">
+
     <div class="container">
+
+        <div class="topo-usuario">
+            <span id="usuarioLogado" class="usuario-logado-info"></span>
+            <button class="btn-logout" onclick="fazerLogout()">🚪 Sair</button>
+        </div>
 
         <h1>📦 Confirmação de Carregamento</h1>
         <p class="subtitulo">Foto + dados da doca → direto pro WhatsApp</p>
@@ -395,6 +454,9 @@
     <!-- MODAL — ADICIONAR LOJA -->
     <!-- ===================================== -->
 
+    </div>
+    <!-- fecha #appConteudo -->
+
     <div id="modalLoja" class="modal-overlay" style="display:none;">
 
         <div class="modal-caixa">
@@ -454,6 +516,7 @@
 
     <div id="toast" class="toast"></div>
 
+    <script src="auth.js"></script>
     <script src="script.js"></script>
 
 </body>
