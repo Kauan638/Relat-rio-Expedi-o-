@@ -904,7 +904,8 @@ function linhaSetorFaturamentoHTML(s, indice, maxValor) {
 function montarConteudoFaturamentoHTML(d) {
 
     const maxValor      = Math.max(...d.setores.map(s => s.valor), 1);
-    const linhasSetores = d.setores.map((s, i) => linhaSetorFaturamentoHTML(s, i, maxValor)).join('');
+    const top10         = d.setores.slice(0, 10);
+    const linhasSetores = top10.map((s, i) => linhaSetorFaturamentoHTML(s, i, maxValor)).join('');
 
     return `
         <div style="background:#14181C;padding:24px 28px 18px;">
@@ -926,7 +927,7 @@ function montarConteudoFaturamentoHTML(d) {
         </div>
         <div style="padding:20px 28px 28px;background:#FFFFFF;">
             <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280;margin-bottom:6px;">
-                Top Setores por Valor Faturado
+                Top 10 Setores por Valor Faturado
             </div>
             ${linhasSetores}
         </div>
