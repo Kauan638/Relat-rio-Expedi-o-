@@ -575,6 +575,7 @@ function montarContainerRelatorio(d) {
 
         const pct = Math.round((r.caminhoes / maxCaminhoes) * 100);
         const borda = i > 0 ? 'border-top:1px solid #EDEFF2;' : '';
+        const lojasTexto = r.lojas.length > 0 ? ` (${r.lojas.join(', ')})` : '';
 
         return `
         <div style="padding:18px 0;${borda}">
@@ -585,7 +586,7 @@ function montarContainerRelatorio(d) {
                 </div>
             </div>
             <div style="font-size:12.5px;color:#6B7280;margin-bottom:10px;">
-                🚪 ${r.docas} docas &nbsp;·&nbsp; 🏪 ${r.lojas.length} lojas faturadas &nbsp;·&nbsp;
+                🚪 ${r.docas} docas &nbsp;·&nbsp; 🏪 ${r.lojas.length} lojas faturadas${escapeHTML(lojasTexto)} &nbsp;·&nbsp;
                 🔄 ${r.veiculosA} veíc. Turno A &nbsp;·&nbsp; ⚠️ ${r.foraEscala} fora da escala
             </div>
             <div style="height:6px;border-radius:3px;background:#EDEFF2;overflow:hidden;">
@@ -593,6 +594,12 @@ function montarContainerRelatorio(d) {
             </div>
         </div>`;
     }).join('');
+
+    const chipsLojas = [...d.lojas].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true })).map(loja => `
+        <span style="display:inline-flex;align-items:center;padding:6px 12px;border-radius:20px;background:#EAF7EF;border:1px solid #B9E6C9;color:#1F4B36;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;">
+            ${escapeHTML(loja)}
+        </span>`
+    ).join('');
 
     div.innerHTML = `
         <div style="background:#14181C;padding:24px 28px 18px;">
@@ -613,6 +620,14 @@ function montarContainerRelatorio(d) {
             ${kpiColunaHTML('Lojas Faturadas', d.lojas.length, '#3DCB82')}
             ${kpiColunaHTML('Veículos Turno A', d.veiculosA, '#6B7280')}
             ${kpiColunaHTML('Fora da Escala', d.foraEscala, '#E8564F')}
+        </div>
+        <div style="padding:20px 28px 8px;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280;margin-bottom:10px;">
+                Lojas Faturadas
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                ${chipsLojas || '<span style="font-size:13px;color:#9AA5B1;">Nenhuma loja registrada</span>'}
+            </div>
         </div>
         <div style="padding:20px 28px 28px;">
             <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280;margin-bottom:6px;">
